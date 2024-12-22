@@ -81,24 +81,44 @@ public struct SwipeActionsModifier: ViewModifier {
                             }
                         }
                         .onEnded { value in
-                            let dragThreshold = actionWidth * CGFloat(trailingActions.count) / 2
-                            if -offset > dragThreshold {
-                                if -offset > trailingViewWidth + actionWidth {
-                                    trailingActions.first?.action()
-                                    resetOffset()
+                            switch swipeDirection {
+                            case .left:
+                                let dragThreshold = actionWidth * CGFloat(trailingActions.count) / 2
+                                if -offset > dragThreshold {
+                                    if -offset > trailingViewWidth + actionWidth {
+                                        trailingActions.first?.action()
+                                        resetOffsetWithAnimation()
+                                    } else {
+                                        withAnimation(.spring) {
+                                            offset = -actionWidth * CGFloat(trailingActions.count)
+                                        }
+                                    }
                                 } else {
-                                    offset = -actionWidth * CGFloat(trailingActions.count)
+                                    resetOffsetWithAnimation()
                                 }
-                            } else {
-                                offset = 0
+                                cachedOffset = offset
+                            case .right:
+                                let dragThreshold = actionWidth * CGFloat(leadingActions.count) / 2
+                                if offset > dragThreshold {
+                                    if offset > leadingViewWidth + actionWidth {
+                                        leadingActions.last?.action()
+                                        resetOffsetWithAnimation()
+                                    } else {
+                                        withAnimation(.spring) {
+                                            offset = actionWidth * CGFloat(trailingActions.count)
+                                        }
+                                    }
+                                } else {
+                                    resetOffsetWithAnimation()
+                                }
+                                cachedOffset = offset
                             }
-                            cachedOffset = offset
-                            let _ = print("offset:", offset)
                         }
                 )
                 .background(alignment: .trailing) {
-                    if swipeDirection == .left {
-                        trailingActionsView
+                    switch swipeDirection {
+                    case .left: trailingActionsView
+                    case .right: leadingActionsView
                     }
                 }
         }
@@ -120,7 +140,7 @@ public struct SwipeActionsModifier: ViewModifier {
                     let isLeftOne = trailingActions[0].id == action.id
                     Button {
                         action.action()
-                        withAnimation { resetOffset() }
+                        withAnimation { resetOffsetWithAnimation() }
                     } label: {
                         ZStack {
                             if let icon = action.icon {
@@ -142,12 +162,53 @@ public struct SwipeActionsModifier: ViewModifier {
                         .frame(maxHeight: .infinity)
                         .background(action.color)
                     }
-                    .animation(nil, value: UUID())
+//                    .animation(nil, value: UUID())
                 }
             }
             .frame(alignment: .trailing)
-            .offset(x: max(0, offset))
             .background { trailingActions.first?.color ?? .clear }
+        }
+    }
+
+    @ViewBuilder
+    private var leadingActionsView: some View {
+        if !leadingActions.isEmpty {
+            HStack(spacing: 0) {
+                ForEach(leadingActions) { action in
+                    let isRightOne = leadingActions[0].id == action.id
+                    Button {
+                        action.action()
+                        withAnimation { resetOffsetWithAnimation() }
+                    } label: {
+                        ZStack {
+                            if let icon = action.icon {
+                                Image(uiImage: icon)
+                                    .renderingMode(.template)
+                            } else if let title = action.title {
+                                Text(title)
+                                    .cornerRadius(10)
+                            } else {
+                                Text("Error")
+                            }
+                        }
+                        .minimumScaleFactor(0.3)
+                        .font(font)
+                        .padding(.horizontal)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: !isRightOne ? actionWidth :
+                                trailingOversized ? trailingHoldWidth : actionWidth)
+                        .frame(maxHeight: .infinity)
+                        .background(action.color)
+                    }
+//                    .animation(nil, value: UUID())
+                }
+                Spacer()
+                Rectangle()
+                    .fill(leadingActions.last?.color ?? .clear)
+                    .frame(width: 20)
+            }
+            .frame(alignment: .leading)
+            .background { leadingActions.last?.color ?? .clear }
         }
     }
 
@@ -161,7 +222,11 @@ public struct SwipeActionsModifier: ViewModifier {
         return offset <= -trailingViewWidth
     }
 
-    private func resetOffset() {
+    private func setOffsetWithAnimation() {
+        
+    }
+
+    private func resetOffsetWithAnimation() {
         withAnimation(.spring()) {
             offset = 0
             cachedOffset = 0
