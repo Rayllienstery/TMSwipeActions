@@ -5,23 +5,22 @@
 //  Created by Kostiantyn Kolosov on 20.12.2024.
 //
 
-// TODO: - Vibration on overswipe
 // TODO: - Vibration on action after overswipe
 // TODO: - Do not let drag if actions is empty
 // TODO: - Flag that disable overswipe action
 // TODO: - Leading Gesture
+// TODO: - Custon width
 
 import SwiftUI
 
 public struct SwipeActionsModifier: ViewModifier {
-    private let trailingActions: [Action]
-    private let leadingActions: [Action]
+    // MARK: - Private
+    private let trailingActions: [SwipeAction]
+    private let leadingActions: [SwipeAction]
     private let leadingFullSwipeIsEnabled = true
     private let trailingFullSwipeIsEnabled = false
 
-    @StateObject private var vibrationService: VibrationService = .init()
-    
-    let actionWidth: CGFloat = 70
+    @State private var vibrationService: any VibrationServiceProtocol = VibrationService()
 
     @State private var offset: CGFloat = 0
     @State private var cachedOffset: CGFloat = 0
@@ -36,10 +35,18 @@ public struct SwipeActionsModifier: ViewModifier {
     @State private var swipeDirection: SwipeDirection = .left
     @State private var userNotified = false
 
-    init(leadingActions: [Action], trailingActions: [Action], font: Font?) {
+    private let actionWidth: CGFloat
+
+    init(leadingActions: [SwipeAction],
+         trailingActions: [SwipeAction],
+         font: Font?,
+         actionWidth: CGFloat? = nil) {
         self.trailingActions = trailingActions
         self.leadingActions = leadingActions
         self.font = font ?? .caption
+        
+        let actionWidth = actionWidth ?? 70
+        self.actionWidth = actionWidth
 
         self.trailingViewWidth = CGFloat(trailingActions.count) * actionWidth
         self.leadingViewWidth = CGFloat(leadingActions.count) * actionWidth
@@ -56,7 +63,6 @@ public struct SwipeActionsModifier: ViewModifier {
                             }
                     }
                 }
-                .animation(.spring, value: isDragging)
                 .offset(x: offset)
                 .gesture(
                     DragGesture()
@@ -100,6 +106,8 @@ public struct SwipeActionsModifier: ViewModifier {
         .mask { content }
     }
 
+    // MARK: - Private
+
     @ViewBuilder
     private var trailingActionsView: some View {
         if !trailingActions.isEmpty {
@@ -134,7 +142,7 @@ public struct SwipeActionsModifier: ViewModifier {
                         .frame(maxHeight: .infinity)
                         .background(action.color)
                     }
-                    .animation(nil, value: 0)
+                    .animation(nil, value: UUID())
                 }
             }
             .frame(alignment: .trailing)
@@ -154,59 +162,10 @@ public struct SwipeActionsModifier: ViewModifier {
     }
 
     private func resetOffset() {
-        offset = 0
-        cachedOffset = 0
-        userNotified = false
-    }
-
-    public struct Action: Identifiable {
-        public let id: UUID = .init()
-        let title: String?
-        let icon: UIImage?
-        let color: Color
-        let action: () -> Void
-
-        public init(title: String, color: Color, action: @escaping () -> Void) {
-            self.title = title
-            self.icon = nil
-            self.color = color
-            self.action = action
+        withAnimation(.spring()) {
+            offset = 0
+            cachedOffset = 0
+            userNotified = false
         }
-
-        public init(icon: UIImage, color: Color, action: @escaping () -> Void) {
-            self.title = nil
-            self.icon = icon
-            self.color = color
-            self.action = action
-        }
-    }
-}
-
-public extension View {
-    func trailingSwipe(_ actions: [SwipeActionsModifier.Action], font: Font? = nil) -> some View {
-        self.modifier(SwipeActionsModifier(leadingActions: [], trailingActions: actions, font: font))
-    }
-
-    func leadingSwipe(_ actions: [SwipeActionsModifier.Action], font: Font? = nil) -> some View {
-        self.modifier(SwipeActionsModifier(leadingActions: actions, trailingActions: [], font: font))
-    }
-
-    func swipeActions(leadingActions: [SwipeActionsModifier.Action],
-                      trailingActions: [SwipeActionsModifier.Action],
-                      font: Font? = nil) -> some View {
-        self.modifier(SwipeActionsModifier(leadingActions: leadingActions,
-                                           trailingActions: trailingActions, font: font))
-    }
-}
-
-enum SwipeDirection {
-    case left
-    case right
-}
-
-class VibrationService: ObservableObject {
-    func vibrate() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.impactOccurred()
     }
 }
