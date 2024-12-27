@@ -5,6 +5,8 @@
 //  Created by Kostiantyn Kolosov on 27.12.2024.
 //
 
+// TODO: - Fluid to the end
+
 import SwiftUI
 
 struct ActionsView: View {
@@ -25,29 +27,31 @@ struct ActionsView: View {
             HStack(spacing: 0) {
                 trailingSpacer
                 ForEach(actions) { action in
-                    Button {
-                        action.action()
-                        withAnimation { resetAction() }
-                    } label: {
-                        ZStack {
-                            if let icon = action.icon {
-                                Image(uiImage: icon)
-                                    .renderingMode(.template)
-                            } else if let title = action.title {
-                                Text(title)
-                                    .cornerRadius(10)
-                                    .lineLimit(1)
-                            } else {
-                                Text("Error")
+                    if !overdragged || (overdragged && action.id == actions.last!.id) {
+                        Button {
+                            action.action()
+                            withAnimation { resetAction() }
+                        } label: {
+                            ZStack {
+                                if let icon = action.icon {
+                                    Image(uiImage: icon)
+                                        .renderingMode(.template)
+                                } else if let title = action.title {
+                                    Text(title)
+                                        .cornerRadius(10)
+                                        .lineLimit(1)
+                                } else {
+                                    Text("Error")
+                                }
                             }
+                            .minimumScaleFactor(0.03)
+                            .font(font)
+                            .padding(.horizontal)
+                            .foregroundStyle(.white)
+                            .frame(width: currentWidth(for: action.id))
+                            .frame(maxHeight: .infinity)
+                            .background(action.color)
                         }
-                        .minimumScaleFactor(0.03)
-                        .font(font)
-                        .padding(.horizontal)
-                        .foregroundStyle(.white)
-                        .frame(width: currentWidth)
-                        .frame(maxHeight: .infinity)
-                        .background(action.color)
                     }
                 }
                 leadingSpacer
@@ -94,9 +98,21 @@ struct ActionsView: View {
         }
     }
 
-    private var currentWidth: CGFloat {
-        let currentSize = abs(offset) / CGFloat(actions.count)
-        print(currentSize)
-        return min(actionWidth, currentSize )
+    private func currentWidth(for id: UUID) -> CGFloat {
+        switch id == actions.last!.id {
+        case true:
+            switch overdragged {
+            case true:
+                return withAnimation(.spring) {
+                    abs(offset)
+                }
+            case false:
+                let currentSize = abs(offset) / CGFloat(actions.count)
+                return min(actionWidth, currentSize)
+            }
+        case false:
+            let currentSize = abs(offset) / CGFloat(actions.count)
+            return min(actionWidth, currentSize)
+        }
     }
 }

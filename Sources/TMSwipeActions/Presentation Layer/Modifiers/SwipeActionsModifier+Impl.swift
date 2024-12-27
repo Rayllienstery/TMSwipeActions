@@ -120,9 +120,10 @@ public struct SwipeActionsModifier: ViewModifier {
             newValue = 0
         }
 
-        gestureState.setNewOffset(newValue)
+        let swipeDirection = gestureState.swipeDirection
+        gestureState.setNewOffset(newValue, contentSize: swipeDirection == .leading ? presenter.leadingViewWidth : presenter.trailingViewWidth)
         presenter.callVibroIfNeeded(offset: newValue,
-                                    swipeDirection: gestureState.swipeDirection)
+                                    swipeDirection: swipeDirection)
     }
 
     func dragEnded() {
