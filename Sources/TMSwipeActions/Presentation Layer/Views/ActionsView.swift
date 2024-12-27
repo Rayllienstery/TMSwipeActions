@@ -27,31 +27,11 @@ struct ActionsView: View {
             HStack(spacing: 0) {
                 trailingSpacer
                 ForEach(actions) { action in
-                    if !overdragged || (overdragged && action.id == actions.last!.id) {
-                        Button {
-                            action.action()
-                            withAnimation { resetAction() }
-                        } label: {
-                            ZStack {
-                                if let icon = action.icon {
-                                    Image(uiImage: icon)
-                                        .renderingMode(.template)
-                                } else if let title = action.title {
-                                    Text(title)
-                                        .cornerRadius(10)
-                                        .lineLimit(1)
-                                } else {
-                                    Text("Error")
-                                }
-                            }
-                            .minimumScaleFactor(0.03)
-                            .font(font)
-                            .padding(.horizontal)
-                            .foregroundStyle(.white)
-                            .frame(width: currentWidth(for: action.id))
-                            .frame(maxHeight: .infinity)
-                            .background(action.color)
-                        }
+                    Button {
+                        action.action()
+                        withAnimation { resetAction() }
+                    } label: {
+                        buttonLabel(action)
                     }
                 }
                 leadingSpacer
@@ -62,6 +42,31 @@ struct ActionsView: View {
     }
 
     @ViewBuilder
+    private func buttonLabel(_ action: SwipeAction) -> some View {
+        ZStack {
+            if let icon = action.icon {
+                Image(uiImage: icon)
+                    .renderingMode(.template)
+            } else if let title = action.title {
+                Text(title)
+                    .cornerRadius(10)
+                    .lineLimit(1)
+            } else {
+                Text("Error")
+            }
+        }
+        .minimumScaleFactor(0.03)
+        .font(font)
+        .padding(.horizontal)
+        .foregroundStyle(.white)
+        .frame(width: currentWidth(for: action.id))
+        .frame(maxHeight: .infinity)
+        .background(action.color)
+        .clipped() // Обрезка содержимого, если ширина становится 0
+        .animation(.easeInOut(duration: 0.3), value: overdragged)
+    }
+    
+    @ViewBuilder
     private var trailingSpacer: some View {
         if swipeEdge == .trailing {
             Spacer()
@@ -70,7 +75,7 @@ struct ActionsView: View {
                 .frame(width: 20)
         }
     }
-
+    
     @ViewBuilder
     private var leadingSpacer: some View {
         if swipeEdge == .leading {
@@ -80,7 +85,7 @@ struct ActionsView: View {
                 .frame(width: 20)
         }
     }
-
+    
     private func isBorderedOne(_ action: SwipeAction) -> Bool {
         guard !actions.isEmpty else { return false }
         switch swipeEdge {
@@ -90,7 +95,7 @@ struct ActionsView: View {
             return action.id == actions.last!.id
         }
     }
-
+    
     private var backgroundColor: Color {
         switch swipeEdge {
         case .trailing: actions.first?.color ?? .clear
@@ -99,20 +104,19 @@ struct ActionsView: View {
     }
 
     private func currentWidth(for id: UUID) -> CGFloat {
-        switch id == actions.last!.id {
+        let isLast = id == actions.last!.id
+        switch isLast {
         case true:
             switch overdragged {
             case true:
-                return withAnimation(.spring) {
-                    abs(offset)
-                }
+                return abs(offset)
             case false:
                 let currentSize = abs(offset) / CGFloat(actions.count)
                 return min(actionWidth, currentSize)
             }
         case false:
             let currentSize = abs(offset) / CGFloat(actions.count)
-            return min(actionWidth, currentSize)
+            return overdragged ? 0 : min(actionWidth, currentSize)
         }
     }
 }
