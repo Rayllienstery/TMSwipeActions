@@ -12,7 +12,8 @@
 // TODO: - Leading overswipe
 
 // FIXME: - Animation and appearance for swipe, check how it works for the native swipe
-// FIXME: -
+// FIXME: - Leading vibro
+// FIXME: - Leading offset
 
 import SwiftUI
 
@@ -154,15 +155,9 @@ public struct SwipeActionsModifier: ViewModifier {
             newValue = 0
         }
 
-        gestureState.offset = newValue
-        gestureState.swipeDirection = gestureState.offset >= 0 ? .leading : .trailing
+        gestureState.setNewOffset(newValue)
 
-        if (-gestureState.offset > trailingViewWidth + presenter.actionWidth), !userNotified {
-            userNotified = true
-            vibrationService.vibrate()
-        } else if !trailingOversized, userNotified {
-            userNotified = false
-        }
+        callVibroIfNeeded()
     }
 
     func dragEnded() {
@@ -198,6 +193,15 @@ public struct SwipeActionsModifier: ViewModifier {
                 resetOffsetWithAnimation()
             }
             gestureState.cachedOffset = gestureState.offset
+        }
+    }
+
+    private func callVibroIfNeeded() {
+        if (-gestureState.offset > trailingViewWidth + presenter.actionWidth), !userNotified {
+            userNotified = true
+            vibrationService.vibrate()
+        } else if !trailingOversized, userNotified {
+            userNotified = false
         }
     }
 }
