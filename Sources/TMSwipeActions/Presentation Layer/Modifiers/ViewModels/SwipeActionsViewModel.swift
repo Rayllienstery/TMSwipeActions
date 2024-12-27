@@ -10,11 +10,8 @@ class SwipeActionsViewModel: ObservableObject {
     @Published var trailingActions: [SwipeAction]
     @Published var leadingActions: [SwipeAction]
 
-    @Published var font: Font
-
-    init(trailingActions: [SwipeAction], leadingActions: [SwipeAction], font: Font) {
+    init(trailingActions: [SwipeAction], leadingActions: [SwipeAction]) {
         self.trailingActions = trailingActions
         self.leadingActions = leadingActions
-        self.font = font
     }
 }

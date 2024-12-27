@@ -14,9 +14,13 @@ public class SwipeActionsViewConfig {
     let leadingFullSwipeIsEnabled: Bool
     let trailingFullSwipeIsEnabled: Bool
 
+    let font: Font
+
     public init(leadingFullSwipeIsEnabled: Bool = true,
-                trailingFullSwipeIsEnabled: Bool = true) {
+                trailingFullSwipeIsEnabled: Bool = true,
+                font: Font = .caption) {
         self.leadingFullSwipeIsEnabled = leadingFullSwipeIsEnabled
         self.trailingFullSwipeIsEnabled = trailingFullSwipeIsEnabled
+        self.font = font
     }
 }

@@ -9,6 +9,7 @@
 // TODO: - Flag that disable overswipe action
 // TODO: - Leading Gesture
 // TODO: - Leading overswipe
+// TODO: - func showTrailingContent()
 
 // FIXME: - Animation and appearance for swipe, check how it works for the native swipe
 
@@ -31,12 +32,10 @@ public struct SwipeActionsModifier: ViewModifier {
 
     init(leadingActions: [SwipeAction],
          trailingActions: [SwipeAction],
-         font: Font?,
          actionWidth: CGFloat,
          viewConfig: ViewConfig) {
         self._viewModel = StateObject(wrappedValue: .init(trailingActions: trailingActions,
-                                                          leadingActions: leadingActions,
-                                                          font: font ?? .caption))
+                                                          leadingActions: leadingActions))
         let presenter = SwipeActionsPresenter(actionWidth: actionWidth,
                                               leadingSwipeIsUnlocked: !leadingActions.isEmpty,
                                               trailingSwipeIsUnlocked: !trailingActions.isEmpty,
@@ -72,19 +71,19 @@ public struct SwipeActionsModifier: ViewModifier {
         switch gestureState.swipeDirection {
         case .trailing:
             ActionsView(actions: $viewModel.trailingActions,
-                        font: $viewModel.font,
                         offset: $gestureState.offset,
                         overdragged: $gestureState.overdragged,
                         swipeEdge: .trailing,
+                        font: viewConfig.font,
                         actionWidth: presenter.actionWidth) {
                 resetOffsetWithAnimation()
             }
         case .leading:
             ActionsView(actions: $viewModel.leadingActions,
-                        font: $viewModel.font,
                         offset: $gestureState.offset,
                         overdragged: $gestureState.overdragged,
                         swipeEdge: .leading,
+                        font: viewConfig.font,
                         actionWidth: presenter.actionWidth) {
                 resetOffsetWithAnimation()
             }

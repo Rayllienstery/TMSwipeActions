@@ -9,12 +9,12 @@ import SwiftUI
 
 struct ActionsView: View {
     @Binding var actions: [SwipeAction]
-    @Binding var font: Font
     @Binding var offset: CGFloat
     @Binding var overdragged: Bool
 
     @State var swipeEdge: SwipeEdge
 
+    var font: Font
     var actionWidth: CGFloat
 
     let resetAction: () -> Void
