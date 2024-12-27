@@ -20,6 +20,7 @@ public struct SwipeActionsModifier: ViewModifier {
     // MARK: - Private
     @StateObject private var viewModel: SwipeActionsViewModel
     @StateObject private var presenter: SwipeActionsPresenter
+    private var viewConfig: ViewConfig
 
     // Size
     @State private var contentWidth: CGFloat = 0 // Core view width
@@ -31,7 +32,8 @@ public struct SwipeActionsModifier: ViewModifier {
     init(leadingActions: [SwipeAction],
          trailingActions: [SwipeAction],
          font: Font?,
-         actionWidth: CGFloat = ViewConfig.defaultActionWidth) {
+         actionWidth: CGFloat,
+         viewConfig: ViewConfig) {
         self._viewModel = StateObject(wrappedValue: .init(trailingActions: trailingActions,
                                                           leadingActions: leadingActions,
                                                           font: font ?? .caption))
@@ -41,6 +43,7 @@ public struct SwipeActionsModifier: ViewModifier {
                                               trailingViewWidth: CGFloat(trailingActions.count) * actionWidth,
                                               leadingViewWidth: CGFloat(leadingActions.count) * actionWidth)
         self._presenter = StateObject(wrappedValue: presenter)
+        self.viewConfig = viewConfig
     }
     
     public func body(content: Content) -> some View {
@@ -128,7 +131,8 @@ public struct SwipeActionsModifier: ViewModifier {
         case .trailing:
             let dragThreshold = presenter.actionWidth * CGFloat(viewModel.trailingActions.count) / 2
             if -gestureState.offset > dragThreshold {
-                if -gestureState.offset > presenter.trailingViewWidth + presenter.actionWidth {
+                if viewConfig.trailingFullSwipeIsEnabled,
+                    -gestureState.offset > presenter.trailingViewWidth + presenter.actionWidth {
                     viewModel.trailingActions.first?.action()
                     resetOffsetWithAnimation()
                 } else {
@@ -142,7 +146,8 @@ public struct SwipeActionsModifier: ViewModifier {
             gestureState.cachedOffset = gestureState.offset
         case .leading:
             let dragThreshold = presenter.actionWidth * CGFloat(viewModel.leadingActions.count) / 2
-            if gestureState.offset > dragThreshold {
+            if viewConfig.leadingFullSwipeIsEnabled,
+               gestureState.offset > dragThreshold {
                 if gestureState.offset > presenter.leadingViewWidth + presenter.actionWidth {
                     viewModel.leadingActions.last?.action()
                     resetOffsetWithAnimation()
@@ -158,6 +163,3 @@ public struct SwipeActionsModifier: ViewModifier {
         }
     }
 }
-
-//    private let leadingFullSwipeIsEnabled = true
-//    private let trailingFullSwipeIsEnabled = false
