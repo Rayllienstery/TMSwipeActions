@@ -134,7 +134,7 @@ public struct SwipeActionsModifier: ViewModifier {
     }
 
     private var leadingOversized: Bool {
-        return gestureState.offset <= leadingViewWidth
+        return gestureState.offset >= leadingViewWidth
     }
 
     private func resetOffsetWithAnimation() {
@@ -197,10 +197,11 @@ public struct SwipeActionsModifier: ViewModifier {
     }
 
     private func callVibroIfNeeded() {
-        if (-gestureState.offset > trailingViewWidth + presenter.actionWidth), !userNotified {
+        if ((-gestureState.offset > trailingViewWidth + presenter.actionWidth)
+            || (gestureState.offset > leadingViewWidth + presenter.actionWidth)), !userNotified {
             userNotified = true
             vibrationService.vibrate()
-        } else if !trailingOversized, userNotified {
+        } else if (gestureState.swipeDirection == .trailing ? !trailingOversized : !leadingOversized), userNotified {
             userNotified = false
         }
     }

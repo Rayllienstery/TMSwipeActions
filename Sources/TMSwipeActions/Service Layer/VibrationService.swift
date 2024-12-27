@@ -13,7 +13,7 @@ protocol VibrationServiceProtocol: ObservableObject {
 
 class VibrationService: VibrationServiceProtocol {
     func vibrate() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
+        let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
     }
 }
