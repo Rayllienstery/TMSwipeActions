@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+// TODO: - Vibro is enabled
+
 class SwipeActionsPresenter: ObservableObject {
     let actionWidth: CGFloat
 
@@ -31,9 +33,25 @@ class SwipeActionsPresenter: ObservableObject {
         self.leadingViewWidth = leadingViewWidth
     }
 
-    func callVibro() {
+    func callVibroIfNeeded(offset: CGFloat, swipeDirection: SwipeEdge) {
+        let trailingOffset = -offset > trailingViewWidth + actionWidth
+        let leadingOffset = offset > leadingViewWidth + actionWidth
+        let oversizeStatus = swipeDirection == .trailing ? !trailingIsOversized(offset) : !leadingIsOversized(offset)
+
+        if (trailingOffset || leadingOffset), !overdragNotified {
+            callVibro()
+        } else if oversizeStatus, overdragNotified {
+            overdragNotified = false
+        }
+    }
+
+    private func callVibro() {
         guard !overdragNotified else { return }
         overdragNotified = true
         vibrationService.vibrate()
     }
+
+    func trailingIsOversized(_ offset: CGFloat) -> Bool { offset <= -trailingViewWidth }
+
+    func leadingIsOversized(_ offset: CGFloat) -> Bool { offset >= leadingViewWidth }
 }

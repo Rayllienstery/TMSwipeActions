@@ -100,14 +100,6 @@ public struct SwipeActionsModifier: ViewModifier {
         return result
     }
 
-    private var trailingOversized: Bool {
-        return gestureState.offset <= -presenter.trailingViewWidth
-    }
-
-    private var leadingOversized: Bool {
-        return gestureState.offset >= presenter.leadingViewWidth
-    }
-
     private func resetOffsetWithAnimation() {
         withAnimation(.spring()) {
             gestureState.offset = 0
@@ -127,7 +119,8 @@ public struct SwipeActionsModifier: ViewModifier {
         }
 
         gestureState.setNewOffset(newValue)
-        callVibroIfNeeded()
+        presenter.callVibroIfNeeded(offset: newValue,
+                                    swipeDirection: gestureState.swipeDirection)
     }
 
     func dragEnded() {
@@ -162,18 +155,6 @@ public struct SwipeActionsModifier: ViewModifier {
                 resetOffsetWithAnimation()
             }
             gestureState.cachedOffset = gestureState.offset
-        }
-    }
-
-    private func callVibroIfNeeded() {
-        let trailingOffset = -gestureState.offset > presenter.trailingViewWidth + presenter.actionWidth
-        let leadingOffset = gestureState.offset > presenter.leadingViewWidth + presenter.actionWidth
-        let oversizeStatus = gestureState.swipeDirection == .trailing ? !trailingOversized : !leadingOversized
-
-        if (trailingOffset || leadingOffset), !presenter.overdragNotified {
-            presenter.callVibro()
-        } else if oversizeStatus, presenter.overdragNotified {
-            presenter.overdragNotified = false
         }
     }
 }
