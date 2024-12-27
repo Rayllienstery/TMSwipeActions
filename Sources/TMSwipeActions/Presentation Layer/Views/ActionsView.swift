@@ -11,6 +11,7 @@ struct ActionsView: View {
     @Binding var actions: [SwipeAction]
     @Binding var offset: CGFloat
     @Binding var overdragged: Bool
+    @Binding var containerWidth: CGFloat
 
     @State var swipeEdge: SwipeEdge
 
@@ -35,17 +36,16 @@ struct ActionsView: View {
                             } else if let title = action.title {
                                 Text(title)
                                     .cornerRadius(10)
+                                    .lineLimit(1)
                             } else {
                                 Text("Error")
                             }
                         }
-                        .minimumScaleFactor(0.3)
+                        .minimumScaleFactor(0.03)
                         .font(font)
                         .padding(.horizontal)
                         .foregroundStyle(.white)
-                        .frame(width: actionWidth)
-                        //                        .frame(maxWidth: !isLeftOne ? actionWidth :
-                        //                                trailingOversized ? trailingHoldWidth : actionWidth)
+                        .frame(width: currentWidth)
                         .frame(maxHeight: .infinity)
                         .background(action.color)
                     }
@@ -92,5 +92,11 @@ struct ActionsView: View {
         case .trailing: actions.first?.color ?? .clear
         case .leading: actions.last?.color ?? .clear
         }
+    }
+
+    private var currentWidth: CGFloat {
+        let currentSize = abs(offset) / CGFloat(actions.count)
+        print(currentSize)
+        return min(actionWidth, currentSize )
     }
 }

@@ -5,11 +5,9 @@
 //  Created by Kostiantyn Kolosov on 20.12.2024.
 //
 
-// TODO: - Do not let drag if actions is empty
-// TODO: - Flag that disable overswipe action
-// TODO: - Leading Gesture
-// TODO: - Leading overswipe
 // TODO: - func showTrailingContent()
+// TODO: - Reverse auto action from overdrag
+// TODO: - fluid width
 
 // FIXME: - Animation and appearance for swipe, check how it works for the native swipe
 
@@ -73,6 +71,7 @@ public struct SwipeActionsModifier: ViewModifier {
             ActionsView(actions: $viewModel.trailingActions,
                         offset: $gestureState.offset,
                         overdragged: $gestureState.overdragged,
+                        containerWidth: $contentWidth,
                         swipeEdge: .trailing,
                         font: viewConfig.font,
                         actionWidth: presenter.actionWidth) {
@@ -82,6 +81,7 @@ public struct SwipeActionsModifier: ViewModifier {
             ActionsView(actions: $viewModel.leadingActions,
                         offset: $gestureState.offset,
                         overdragged: $gestureState.overdragged,
+                        containerWidth: $contentWidth,
                         swipeEdge: .leading,
                         font: viewConfig.font,
                         actionWidth: presenter.actionWidth) {
