@@ -11,12 +11,28 @@
 // TODO: - Leading Gesture
 // TODO: - Leading overswipe
 
+// FIXME: - Animation and appearance for swipe, check how it works for the native swipe
+
 import SwiftUI
 
+class SwipeActionsViewModel: ObservableObject {
+    @Published var trailingActions: [SwipeAction]
+    @Published var leadingActions: [SwipeAction]
+
+    @Published var font: Font
+
+    init(trailingActions: [SwipeAction], leadingActions: [SwipeAction], font: Font) {
+        self.trailingActions = trailingActions
+        self.leadingActions = leadingActions
+        self.font = font
+    }
+}
+
 public struct SwipeActionsModifier: ViewModifier {
+    
     // MARK: - Private
-    private let trailingActions: [SwipeAction]
-    private let leadingActions: [SwipeAction]
+    @StateObject private var viewModel: SwipeActionsViewModel
+    
 //    private let leadingFullSwipeIsEnabled = true
 //    private let trailingFullSwipeIsEnabled = false
 
@@ -26,13 +42,11 @@ public struct SwipeActionsModifier: ViewModifier {
     @State private var cachedOffset: CGFloat = 0
     @GestureState private var isDragging = false
 
-    @State var font: Font
-
     let trailingViewWidth: CGFloat
     let leadingViewWidth: CGFloat
 
     @State private var contentWidth: CGFloat = 0
-    @State private var swipeDirection: SwipeDirection = .left
+    @State private var swipeDirection: SwipeEdge = .trailing
     @State private var userNotified = false
 
     private let actionWidth: CGFloat
@@ -41,10 +55,9 @@ public struct SwipeActionsModifier: ViewModifier {
          trailingActions: [SwipeAction],
          font: Font?,
          actionWidth: CGFloat? = nil) {
-        self.trailingActions = trailingActions
-        self.leadingActions = leadingActions
-        self.font = font ?? .caption
-        
+        self._viewModel = StateObject(wrappedValue: .init(trailingActions: trailingActions,
+                                                          leadingActions: leadingActions,
+                                                          font: font ?? .caption))
         let actionWidth = actionWidth ?? 70
         self.actionWidth = actionWidth
 
@@ -72,7 +85,7 @@ public struct SwipeActionsModifier: ViewModifier {
                         .onChanged { value in
                             let dragAmount = value.translation.width
                             offset = dragAmount + cachedOffset
-                            swipeDirection = offset >= 0 ? .right : .left
+                            swipeDirection = offset >= 0 ? .leading : .trailing
                             if (-offset > trailingViewWidth + actionWidth), !userNotified {
                                 userNotified = true
                                 vibrationService.vibrate()
@@ -82,30 +95,30 @@ public struct SwipeActionsModifier: ViewModifier {
                         }
                         .onEnded { value in
                             switch swipeDirection {
-                            case .left:
-                                let dragThreshold = actionWidth * CGFloat(trailingActions.count) / 2
+                            case .trailing:
+                                let dragThreshold = actionWidth * CGFloat(viewModel.trailingActions.count) / 2
                                 if -offset > dragThreshold {
                                     if -offset > trailingViewWidth + actionWidth {
-                                        trailingActions.first?.action()
+                                        viewModel.trailingActions.first?.action()
                                         resetOffsetWithAnimation()
                                     } else {
                                         withAnimation(.spring) {
-                                            offset = -actionWidth * CGFloat(trailingActions.count)
+                                            offset = -actionWidth * CGFloat(viewModel.trailingActions.count)
                                         }
                                     }
                                 } else {
                                     resetOffsetWithAnimation()
                                 }
                                 cachedOffset = offset
-                            case .right:
-                                let dragThreshold = actionWidth * CGFloat(leadingActions.count) / 2
+                            case .leading:
+                                let dragThreshold = actionWidth * CGFloat(viewModel.leadingActions.count) / 2
                                 if offset > dragThreshold {
                                     if offset > leadingViewWidth + actionWidth {
-                                        leadingActions.last?.action()
+                                        viewModel.leadingActions.last?.action()
                                         resetOffsetWithAnimation()
                                     } else {
                                         withAnimation(.spring) {
-                                            offset = actionWidth * CGFloat(trailingActions.count)
+                                            offset = actionWidth * CGFloat(viewModel.trailingActions.count)
                                         }
                                     }
                                 } else {
@@ -115,11 +128,9 @@ public struct SwipeActionsModifier: ViewModifier {
                             }
                         }
                 )
-                .background(alignment: .trailing) {
-                    switch swipeDirection {
-                    case .left: trailingActionsView
-                    case .right: leadingActionsView
-                    }
+//                .background(alignment: .trailing) {
+                .background {
+                    swipeView
                 }
         }
         .clipped()
@@ -129,96 +140,76 @@ public struct SwipeActionsModifier: ViewModifier {
     // MARK: - Private
 
     @ViewBuilder
-    private var trailingActionsView: some View {
-        if !trailingActions.isEmpty {
-            HStack(spacing: 0) {
-                Spacer()
-                Rectangle()
-                    .fill(trailingActions.first?.color ?? .clear)
-                    .frame(width: 20)
-                ForEach(trailingActions) { action in
-                    let isLeftOne = trailingActions[0].id == action.id
-                    Button {
-                        action.action()
-                        withAnimation { resetOffsetWithAnimation() }
-                    } label: {
-                        ZStack {
-                            if let icon = action.icon {
-                                Image(uiImage: icon)
-                                    .renderingMode(.template)
-                            } else if let title = action.title {
-                                Text(title)
-                                    .cornerRadius(10)
-                            } else {
-                                Text("Error")
-                            }
-                        }
-                        .minimumScaleFactor(0.3)
-                        .font(font)
-                        .padding(.horizontal)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: !isLeftOne ? actionWidth :
-                                trailingOversized ? trailingHoldWidth : actionWidth)
-                        .frame(maxHeight: .infinity)
-                        .background(action.color)
-                    }
-//                    .animation(nil, value: UUID())
-                }
+    private var swipeView: some View {
+        switch swipeDirection {
+        case .trailing:
+            ActionsView(actions: $viewModel.trailingActions,
+                        font: $viewModel.font,
+                        offset: $offset,
+                        swipeEdge: .trailing,
+                        actionWidth: actionWidth) {
+                resetOffsetWithAnimation()
             }
-            .frame(alignment: .trailing)
-            .background { trailingActions.first?.color ?? .clear }
+        case .leading:
+            ActionsView(actions: $viewModel.leadingActions,
+                        font: $viewModel.font,
+                        offset: $offset,
+                        swipeEdge: .leading,
+                        actionWidth: actionWidth) {
+                resetOffsetWithAnimation()
+            }
         }
     }
 
-    @ViewBuilder
-    private var leadingActionsView: some View {
-        if !leadingActions.isEmpty {
-            HStack(spacing: 0) {
-                ForEach(leadingActions) { action in
-                    let isRightOne = leadingActions[0].id == action.id
-                    Button {
-                        action.action()
-                        withAnimation { resetOffsetWithAnimation() }
-                    } label: {
-                        ZStack {
-                            if let icon = action.icon {
-                                Image(uiImage: icon)
-                                    .renderingMode(.template)
-                            } else if let title = action.title {
-                                Text(title)
-                                    .cornerRadius(10)
-                            } else {
-                                Text("Error")
-                            }
-                        }
-                        .minimumScaleFactor(0.3)
-                        .font(font)
-                        .padding(.horizontal)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: !isRightOne ? actionWidth : leadingOversized ? leadingHoldWidth : actionWidth)
-                        .frame(maxHeight: .infinity)
-                        .background(action.color)
-                    }
-//                    .animation(nil, value: UUID())
-                }
-                Spacer()
-                Rectangle()
-                    .fill(leadingActions.last?.color ?? .clear)
-                    .frame(width: 20)
-            }
-            .frame(alignment: .leading)
-            .background { leadingActions.last?.color ?? .clear }
-        }
-    }
+//    @ViewBuilder
+//    private var leadingActionsView: some View {
+//        if !leadingActions.isEmpty {
+//            HStack(spacing: 0) {
+//                ForEach(leadingActions) { action in
+//                    let isRightOne = leadingActions[0].id == action.id
+//                    Button {
+//                        action.action()
+//                        withAnimation { resetOffsetWithAnimation() }
+//                    } label: {
+//                        ZStack {
+//                            if let icon = action.icon {
+//                                Image(uiImage: icon)
+//                                    .renderingMode(.template)
+//                            } else if let title = action.title {
+//                                Text(title)
+//                                    .cornerRadius(10)
+//                            } else {
+//                                Text("Error")
+//                            }
+//                        }
+//                        .minimumScaleFactor(0.3)
+//                        .font(font)
+//                        .padding(.horizontal)
+//                        .foregroundStyle(.white)
+//                        .frame(maxWidth: !isRightOne ? actionWidth : leadingOversized ? leadingHoldWidth : actionWidth)
+//                        .frame(maxHeight: .infinity)
+//                        .background(action.color)
+//                    }
+////                    .animation(nil, value: UUID())
+//                }
+//                Spacer()
+//                Rectangle()
+//                    .fill(leadingActions.last?.color ?? .clear)
+//                    .frame(width: 20)
+//            }
+//            .frame(alignment: .leading)
+//            .background { leadingActions.last?.color ?? .clear }
+//        }
+//    }
 
     private var trailingHoldWidth: CGFloat {
-        let rightSideActionsWidth = CGFloat(trailingActions.count - 1) * actionWidth
+        let rightSideActionsWidth = CGFloat(viewModel.trailingActions.count - 1) * actionWidth
         let result = -offset - rightSideActionsWidth
         return result
     }
 
     private var leadingHoldWidth: CGFloat {
-        let leftSideActionsWidth = CGFloat(leadingActions.count - 1) * actionWidth
+        let leftSideActionsWidth = CGFloat(viewModel.leadingActions.count - 1) * actionWidth
         let result = offset - leftSideActionsWidth
         print("leadingHoldWidth: ", result)
         return result
@@ -230,10 +221,6 @@ public struct SwipeActionsModifier: ViewModifier {
 
     private var leadingOversized: Bool {
         return offset <= leadingViewWidth
-    }
-
-    private func setOffsetWithAnimation() {
-        
     }
 
     private func resetOffsetWithAnimation() {
