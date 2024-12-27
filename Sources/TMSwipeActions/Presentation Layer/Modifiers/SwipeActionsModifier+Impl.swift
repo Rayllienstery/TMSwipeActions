@@ -5,11 +5,11 @@
 //  Created by Kostiantyn Kolosov on 20.12.2024.
 //
 
-// TODO: - Vibration on action after overswipe
 // TODO: - Do not let drag if actions is empty
 // TODO: - Flag that disable overswipe action
-// TODO: - Leading Gesture
 // TODO: - Custon width
+// TODO: - Leading Gesture
+// TODO: - Leading overswipe
 
 import SwiftUI
 
@@ -17,8 +17,8 @@ public struct SwipeActionsModifier: ViewModifier {
     // MARK: - Private
     private let trailingActions: [SwipeAction]
     private let leadingActions: [SwipeAction]
-    private let leadingFullSwipeIsEnabled = true
-    private let trailingFullSwipeIsEnabled = false
+//    private let leadingFullSwipeIsEnabled = true
+//    private let trailingFullSwipeIsEnabled = false
 
     @State private var vibrationService: any VibrationServiceProtocol = VibrationService()
 
@@ -195,8 +195,7 @@ public struct SwipeActionsModifier: ViewModifier {
                         .font(font)
                         .padding(.horizontal)
                         .foregroundStyle(.white)
-                        .frame(maxWidth: !isRightOne ? actionWidth :
-                                trailingOversized ? trailingHoldWidth : actionWidth)
+                        .frame(maxWidth: !isRightOne ? actionWidth : leadingOversized ? leadingHoldWidth : actionWidth)
                         .frame(maxHeight: .infinity)
                         .background(action.color)
                     }
@@ -218,8 +217,19 @@ public struct SwipeActionsModifier: ViewModifier {
         return result
     }
 
+    private var leadingHoldWidth: CGFloat {
+        let leftSideActionsWidth = CGFloat(leadingActions.count - 1) * actionWidth
+        let result = offset - leftSideActionsWidth
+        print("leadingHoldWidth: ", result)
+        return result
+    }
+
     private var trailingOversized: Bool {
         return offset <= -trailingViewWidth
+    }
+
+    private var leadingOversized: Bool {
+        return offset <= leadingViewWidth
     }
 
     private func setOffsetWithAnimation() {
