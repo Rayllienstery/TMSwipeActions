@@ -8,18 +8,25 @@
 import SwiftUI
 
 public extension View {
-    func trailingSwipe(_ actions: [SwipeAction], font: Font? = nil) -> some View {
-        self.modifier(SwipeActionsModifier(leadingActions: [], trailingActions: actions, font: font))
+    typealias Config = SwipeActionsViewConfig
+
+    func trailingSwipe(_ actions: [SwipeAction],
+                       font: Font? = nil,
+                       actionWidth: CGFloat = Config.defaultActionWidth) -> some View {
+        self.modifier(SwipeActionsModifier(leadingActions: [], trailingActions: actions, font: font, actionWidth: actionWidth))
     }
 
-    func leadingSwipe(_ actions: [SwipeAction], font: Font? = nil) -> some View {
-        self.modifier(SwipeActionsModifier(leadingActions: actions, trailingActions: [], font: font))
+    func leadingSwipe(_ actions: [SwipeAction],
+                      font: Font? = nil,
+                      actionWidth: CGFloat = Config.defaultActionWidth) -> some View {
+        self.modifier(SwipeActionsModifier(leadingActions: actions, trailingActions: [], font: font, actionWidth: actionWidth))
     }
 
     func swipeActions(leadingActions: [SwipeAction],
                       trailingActions: [SwipeAction],
-                      font: Font? = nil) -> some View {
+                      font: Font? = nil,
+                      actionWidth: CGFloat = Config.defaultActionWidth) -> some View {
         self.modifier(SwipeActionsModifier(leadingActions: leadingActions,
-                                           trailingActions: trailingActions, font: font))
+                                           trailingActions: trailingActions, font: font, actionWidth: actionWidth))
     }
 }

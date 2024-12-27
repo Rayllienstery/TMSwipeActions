@@ -7,28 +7,12 @@
 
 // TODO: - Do not let drag if actions is empty
 // TODO: - Flag that disable overswipe action
-// TODO: - Custon width
 // TODO: - Leading Gesture
 // TODO: - Leading overswipe
 
 // FIXME: - Animation and appearance for swipe, check how it works for the native swipe
-// FIXME: - Leading vibro
-// FIXME: - Leading offset
 
 import SwiftUI
-
-class SwipeActionsViewConfig {
-    // Static
-    static let defaultActionWidth: CGFloat = 70
-}
-
-class SwipeActionsPresenter: ObservableObject {
-    let actionWidth: CGFloat
-
-    init(actionWidth: CGFloat) {
-        self.actionWidth = actionWidth
-    }
-}
 
 public struct SwipeActionsModifier: ViewModifier {
     typealias ViewConfig = SwipeActionsViewConfig
@@ -36,16 +20,6 @@ public struct SwipeActionsModifier: ViewModifier {
     // MARK: - Private
     @StateObject private var viewModel: SwipeActionsViewModel
     @StateObject private var presenter: SwipeActionsPresenter
-
-    @State private var vibrationService: any VibrationServiceProtocol = VibrationService()
-
-    let trailingViewWidth: CGFloat
-    let leadingViewWidth: CGFloat
-
-    let leadingSwipeIsUnlocked: Bool
-    let trailingSwipeIsUnlocked: Bool
-
-    @State private var userNotified = false
 
     // Size
     @State private var contentWidth: CGFloat = 0 // Core view width
@@ -58,17 +32,15 @@ public struct SwipeActionsModifier: ViewModifier {
          trailingActions: [SwipeAction],
          font: Font?,
          actionWidth: CGFloat = ViewConfig.defaultActionWidth) {
-
         self._viewModel = StateObject(wrappedValue: .init(trailingActions: trailingActions,
                                                           leadingActions: leadingActions,
                                                           font: font ?? .caption))
-        self._presenter = StateObject(wrappedValue: .init(actionWidth: actionWidth))
-
-        self.trailingViewWidth = CGFloat(trailingActions.count) * actionWidth
-        self.leadingViewWidth = CGFloat(leadingActions.count) * actionWidth
-
-        self.leadingSwipeIsUnlocked = !leadingActions.isEmpty
-        self.trailingSwipeIsUnlocked = !trailingActions.isEmpty
+        let presenter = SwipeActionsPresenter(actionWidth: actionWidth,
+                                              leadingSwipeIsUnlocked: !leadingActions.isEmpty,
+                                              trailingSwipeIsUnlocked: !trailingActions.isEmpty,
+                                              trailingViewWidth: CGFloat(trailingActions.count) * actionWidth,
+                                              leadingViewWidth: CGFloat(leadingActions.count) * actionWidth)
+        self._presenter = StateObject(wrappedValue: presenter)
     }
     
     public func body(content: Content) -> some View {
@@ -125,23 +97,22 @@ public struct SwipeActionsModifier: ViewModifier {
     private var leadingHoldWidth: CGFloat {
         let leftSideActionsWidth = CGFloat(viewModel.leadingActions.count - 1) * presenter.actionWidth
         let result = gestureState.offset - leftSideActionsWidth
-        print("leadingHoldWidth: ", result)
         return result
     }
 
     private var trailingOversized: Bool {
-        return gestureState.offset <= -trailingViewWidth
+        return gestureState.offset <= -presenter.trailingViewWidth
     }
 
     private var leadingOversized: Bool {
-        return gestureState.offset >= leadingViewWidth
+        return gestureState.offset >= presenter.leadingViewWidth
     }
 
     private func resetOffsetWithAnimation() {
         withAnimation(.spring()) {
             gestureState.offset = 0
             gestureState.cachedOffset = 0
-            userNotified = false
+            presenter.overdragNotified = false
         }
     }
 
@@ -149,9 +120,9 @@ public struct SwipeActionsModifier: ViewModifier {
         let dragAmount = translation
         var newValue = dragAmount + gestureState.cachedOffset
 
-        if !leadingSwipeIsUnlocked, newValue > 0 {
+        if !presenter.leadingSwipeIsUnlocked, newValue > 0 {
             newValue = 0
-        } else if !trailingSwipeIsUnlocked, newValue < 0 {
+        } else if !presenter.trailingSwipeIsUnlocked, newValue < 0 {
             newValue = 0
         }
 
@@ -165,7 +136,7 @@ public struct SwipeActionsModifier: ViewModifier {
         case .trailing:
             let dragThreshold = presenter.actionWidth * CGFloat(viewModel.trailingActions.count) / 2
             if -gestureState.offset > dragThreshold {
-                if -gestureState.offset > trailingViewWidth + presenter.actionWidth {
+                if -gestureState.offset > presenter.trailingViewWidth + presenter.actionWidth {
                     viewModel.trailingActions.first?.action()
                     resetOffsetWithAnimation()
                 } else {
@@ -178,15 +149,14 @@ public struct SwipeActionsModifier: ViewModifier {
             }
             gestureState.cachedOffset = gestureState.offset
         case .leading:
-            // TODO: - Refactor
             let dragThreshold = presenter.actionWidth * CGFloat(viewModel.leadingActions.count) / 2
             if gestureState.offset > dragThreshold {
-                if gestureState.offset > leadingViewWidth + presenter.actionWidth {
+                if gestureState.offset > presenter.leadingViewWidth + presenter.actionWidth {
                     viewModel.leadingActions.last?.action()
                     resetOffsetWithAnimation()
                 } else {
                     withAnimation(.spring) {
-                        gestureState.offset = presenter.actionWidth * CGFloat(viewModel.trailingActions.count)
+                        gestureState.offset = presenter.actionWidth * CGFloat(viewModel.leadingActions.count)
                     }
                 }
             } else {
@@ -197,12 +167,11 @@ public struct SwipeActionsModifier: ViewModifier {
     }
 
     private func callVibroIfNeeded() {
-        if ((-gestureState.offset > trailingViewWidth + presenter.actionWidth)
-            || (gestureState.offset > leadingViewWidth + presenter.actionWidth)), !userNotified {
-            userNotified = true
-            vibrationService.vibrate()
-        } else if (gestureState.swipeDirection == .trailing ? !trailingOversized : !leadingOversized), userNotified {
-            userNotified = false
+        if ((-gestureState.offset > presenter.trailingViewWidth + presenter.actionWidth)
+            || (gestureState.offset > presenter.leadingViewWidth + presenter.actionWidth)), !presenter.overdragNotified {
+            presenter.callVibro()
+        } else if (gestureState.swipeDirection == .trailing ? !trailingOversized : !leadingOversized), presenter.overdragNotified {
+            presenter.overdragNotified = false
         }
     }
 }
