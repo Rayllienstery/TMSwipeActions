@@ -1,5 +1,5 @@
 //
-//  SwipeActionsModifier .swift
+//  SwipeActionsModifier.swift
 //  TMSwipeActions
 //
 //  Created by Kostiantyn Kolosov on 22.12.2024.

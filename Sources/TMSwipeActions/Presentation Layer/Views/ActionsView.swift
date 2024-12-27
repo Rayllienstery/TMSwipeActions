@@ -11,6 +11,7 @@ struct ActionsView: View {
     @Binding var actions: [SwipeAction]
     @Binding var font: Font
     @Binding var offset: CGFloat
+    @Binding var overdragged: Bool
 
     @State var swipeEdge: SwipeEdge
 
