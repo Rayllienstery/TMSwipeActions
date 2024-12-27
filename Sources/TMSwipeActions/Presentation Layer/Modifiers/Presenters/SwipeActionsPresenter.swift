@@ -16,7 +16,7 @@ class SwipeActionsPresenter: ObservableObject {
     let trailingViewWidth: CGFloat
     let leadingViewWidth: CGFloat
 
-    var overdragNotified = false { didSet { print("overdragNotified: \(overdragNotified) \(Date.now.description)") } }
+    var overdragNotified = false
     private var vibrationService: any VibrationServiceProtocol = VibrationService()
 
     init(actionWidth: CGFloat,

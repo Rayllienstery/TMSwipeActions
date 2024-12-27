@@ -127,7 +127,6 @@ public struct SwipeActionsModifier: ViewModifier {
         }
 
         gestureState.setNewOffset(newValue)
-
         callVibroIfNeeded()
     }
 
@@ -167,10 +166,13 @@ public struct SwipeActionsModifier: ViewModifier {
     }
 
     private func callVibroIfNeeded() {
-        if ((-gestureState.offset > presenter.trailingViewWidth + presenter.actionWidth)
-            || (gestureState.offset > presenter.leadingViewWidth + presenter.actionWidth)), !presenter.overdragNotified {
+        let trailingOffset = -gestureState.offset > presenter.trailingViewWidth + presenter.actionWidth
+        let leadingOffset = gestureState.offset > presenter.leadingViewWidth + presenter.actionWidth
+        let oversizeStatus = gestureState.swipeDirection == .trailing ? !trailingOversized : !leadingOversized
+
+        if (trailingOffset || leadingOffset), !presenter.overdragNotified {
             presenter.callVibro()
-        } else if (gestureState.swipeDirection == .trailing ? !trailingOversized : !leadingOversized), presenter.overdragNotified {
+        } else if oversizeStatus, presenter.overdragNotified {
             presenter.overdragNotified = false
         }
     }
