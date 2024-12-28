@@ -12,7 +12,7 @@ extension ActionsView {
     func actionButton(_ action: SwipeAction, _ theBorderedOne: Bool) -> some View {
         Button {
             action.action()
-            withAnimation { resetAction() }
+            withAnimation(.spring(duration: 0.3)) { resetAction() }
         } label: {
             actionButtonLabel(action, theBorderedOne)
         }

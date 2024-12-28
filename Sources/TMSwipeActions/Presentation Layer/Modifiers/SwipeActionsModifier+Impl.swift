@@ -8,6 +8,7 @@
 // TODO: - func showTrailingContent()
 // TODO: - Reverse auto action from overdrag
 // TODO: - fluid width
+// TODO: - Gesture area
 
 // FIXME: - Animation and appearance for swipe, check how it works for the native swipe
 
@@ -90,20 +91,8 @@ public struct SwipeActionsModifier: ViewModifier {
         }
     }
 
-    private var trailingHoldWidth: CGFloat {
-        let rightSideActionsWidth = CGFloat(viewModel.trailingActions.count - 1) * presenter.actionWidth
-        let result = -gestureState.offset - rightSideActionsWidth
-        return result
-    }
-
-    private var leadingHoldWidth: CGFloat {
-        let leftSideActionsWidth = CGFloat(viewModel.leadingActions.count - 1) * presenter.actionWidth
-        let result = gestureState.offset - leftSideActionsWidth
-        return result
-    }
-
     private func resetOffsetWithAnimation() {
-        withAnimation(.spring()) {
+        withAnimation(.spring(duration: 0.3)) {
             gestureState.offset = 0
             gestureState.cachedOffset = 0
             presenter.overdragNotified = false
@@ -140,7 +129,7 @@ public struct SwipeActionsModifier: ViewModifier {
                     viewModel.trailingActions.last?.action()
                     resetOffsetWithAnimation()
                 } else {
-                    withAnimation(.spring) {
+                    withAnimation(.spring(duration: 0.3)) {
                         gestureState.offset = -presenter.actionWidth * CGFloat(viewModel.trailingActions.count)
                     }
                 }
@@ -156,7 +145,7 @@ public struct SwipeActionsModifier: ViewModifier {
                     viewModel.leadingActions.first?.action()
                     resetOffsetWithAnimation()
                 } else {
-                    withAnimation(.spring) {
+                    withAnimation(.spring(duration: 0.3)) {
                         gestureState.offset = presenter.actionWidth * CGFloat(viewModel.leadingActions.count)
                     }
                 }
