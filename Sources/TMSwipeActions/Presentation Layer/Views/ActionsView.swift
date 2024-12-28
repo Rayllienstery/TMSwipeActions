@@ -17,6 +17,9 @@ struct ActionsView: View {
 
     @State var swipeEdge: SwipeEdge
 
+    @State var width: CGFloat = 0
+    @State var fullWidth: CGFloat = 0
+
     var font: Font
     var actionWidth: CGFloat
 
@@ -25,74 +28,52 @@ struct ActionsView: View {
     var body: some View {
         if !actions.isEmpty {
             HStack(spacing: 0) {
-                trailingSpacer
                 ForEach(actions) { action in
-                    Button {
-                        action.action()
-                        withAnimation { resetAction() }
-                    } label: {
-                        buttonLabel(action)
-                    }
+                    let theBorderedOne = theBorderedOne(action)
+                    actionButton(action, theBorderedOne)
                 }
-                leadingSpacer
             }
-            .frame(alignment: swipeEdge.alignment)
+            .frame(width: abs(offset), alignment: swipeEdge.alignment)
+            .animation(.default, value: width >= 0)
+            .animation(.default, value: overdragged)
             .background { backgroundColor }
+            .onChange(of: offset) { newValue in
+                withTransaction(Transaction(animation: nil)) {
+                    self.width = actionWidthValue
+                    self.fullWidth = abs(offset)
+                }
+            }
         }
     }
 
-    @ViewBuilder
-    private func buttonLabel(_ action: SwipeAction) -> some View {
-        ZStack {
-            if let icon = action.icon {
-                Image(uiImage: icon)
-                    .renderingMode(.template)
-            } else if let title = action.title {
-                Text(title)
-                    .cornerRadius(10)
-                    .lineLimit(1)
-            } else {
-                Text("Error")
-            }
-        }
-        .minimumScaleFactor(0.03)
-        .font(font)
-        .padding(.horizontal)
-        .foregroundStyle(.white)
-        .frame(width: currentWidth(for: action.id))
-        .frame(maxHeight: .infinity)
-        .background(action.color)
-        .clipped() // Обрезка содержимого, если ширина становится 0
-        .animation(.easeInOut(duration: 0.3), value: overdragged)
-    }
-    
-    @ViewBuilder
-    private var trailingSpacer: some View {
-        if swipeEdge == .trailing {
-            Spacer()
-            Rectangle()
-                .fill(actions.first?.color ?? .clear)
-                .frame(width: 20)
+    private var actionWidthValue: CGFloat {
+        let actionsCount = CGFloat(actions.count)
+        let offset = abs(offset)
+        switch overdragged {
+        case true:
+            return offset / actionsCount
+        case false:
+            return offset / actionsCount
         }
     }
     
-    @ViewBuilder
-    private var leadingSpacer: some View {
-        if swipeEdge == .leading {
-            Spacer()
-            Rectangle()
-                .fill(actions.last?.color ?? .clear)
-                .frame(width: 20)
-        }
-    }
-    
-    private func isBorderedOne(_ action: SwipeAction) -> Bool {
+    private func theFirstOne(_ action: SwipeAction) -> Bool {
         guard !actions.isEmpty else { return false }
         switch swipeEdge {
         case .trailing:
-            return action.id == actions[0].id
+            return action.id == actions.first!.id
         case .leading:
             return action.id == actions.last!.id
+        }
+    }
+
+    private func theBorderedOne(_ action: SwipeAction) -> Bool {
+        guard !actions.isEmpty else { return false }
+        switch swipeEdge {
+        case .trailing:
+            return action.id == actions.last!.id
+        case .leading:
+            return action.id == actions.first!.id
         }
     }
     
@@ -120,3 +101,39 @@ struct ActionsView: View {
         }
     }
 }
+
+//#Preview {
+//    struct TestView: View {
+//        @State var count = 1
+//        
+//        var body: some View {
+//            VStack {
+//                HStack(spacing: 0) {
+//                    Spacer()
+//                    ForEach(0..<count, id: \.self) {_ in
+//                        Button {
+//                            
+//                        } label: {
+//                            Rectangle()
+//                                .foregroundStyle(.blue.opacity(.random(in: 0.5..<1)))
+//                                .frame(maxWidth: .infinity)
+//                                .animation(.bouncy, value: count)
+//                        }
+//                    }
+//                }
+//                .frame(maxWidth: .infinity)
+//                .frame(height: 50)
+//                .background(.gray)
+//                .mask {
+//                    RoundedRectangle(cornerRadius: 10)
+//                }
+//                .padding()
+//                Button("Add") {
+//                    count += 1
+//                }
+//            }
+//        }
+//    }
+//
+//    return TestView()
+//}

@@ -57,7 +57,7 @@ public struct SwipeActionsModifier: ViewModifier {
                         .onChanged { value in dragOnChanged(translation: value.translation.width) }
                         .onEnded { _ in dragEnded() }
                 )
-                .background { swipeView }
+                .background(alignment: gestureState.swipeDirection.alignment) { swipeView }
         }
         .clipped()
         .mask { content }
@@ -121,7 +121,11 @@ public struct SwipeActionsModifier: ViewModifier {
         }
 
         let swipeDirection = gestureState.swipeDirection
-        gestureState.setNewOffset(newValue, contentSize: swipeDirection == .leading ? presenter.leadingViewWidth : presenter.trailingViewWidth)
+        let contentSize = swipeDirection == .leading ? presenter.leadingViewWidth : presenter.trailingViewWidth
+
+        gestureState.setNewOffset(newValue,
+                                  contentSize: contentSize,
+                                  safeWidth: presenter.actionWidth)
         presenter.callVibroIfNeeded(offset: newValue,
                                     swipeDirection: swipeDirection)
     }
@@ -133,7 +137,7 @@ public struct SwipeActionsModifier: ViewModifier {
             if -gestureState.offset > dragThreshold {
                 if viewConfig.trailingFullSwipeIsEnabled,
                     -gestureState.offset > presenter.trailingViewWidth + presenter.actionWidth {
-                    viewModel.trailingActions.first?.action()
+                    viewModel.trailingActions.last?.action()
                     resetOffsetWithAnimation()
                 } else {
                     withAnimation(.spring) {
@@ -149,7 +153,7 @@ public struct SwipeActionsModifier: ViewModifier {
             if viewConfig.leadingFullSwipeIsEnabled,
                gestureState.offset > dragThreshold {
                 if gestureState.offset > presenter.leadingViewWidth + presenter.actionWidth {
-                    viewModel.leadingActions.last?.action()
+                    viewModel.leadingActions.first?.action()
                     resetOffsetWithAnimation()
                 } else {
                     withAnimation(.spring) {
