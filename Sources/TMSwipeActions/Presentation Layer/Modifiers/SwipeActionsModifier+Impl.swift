@@ -7,7 +7,6 @@
 
 // TODO: - Reverse auto action from overdrag
 // TODO: - Gesture area
-// TODO: - Tap on the opened button will close content view
 // TODO: - Appearance Manager
 
 // FIXME: - end gesture animation smoothing
@@ -72,6 +71,17 @@ public struct SwipeActionsModifier: ViewModifier {
                         .onEnded { _ in interactor.dragEnded() }
                 )
                 .background(alignment: interactor.gestureState.swipeDirection.alignment) { swipeView }
+                .overlay {
+                    if interactor.gestureState.offset != 0 {
+                        Button {
+                            interactor.resetOffsetWithAnimation()
+                        } label: {
+                            Rectangle()
+                                .opacity(.zero)
+                                .offset(x: interactor.gestureState.offset)
+                        }
+                    }
+                }
         }
         .clipped()
         .mask { content }
