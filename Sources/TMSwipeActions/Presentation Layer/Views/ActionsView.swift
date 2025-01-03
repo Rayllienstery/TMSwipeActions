@@ -10,6 +10,8 @@
 import SwiftUI
 
 struct ActionsView: View {
+    @Binding var viewConfig: SwipeActionsViewConfig
+
     @Binding var actions: [SwipeAction]
     @Binding var offset: CGFloat
     @Binding var overdragged: Bool
@@ -25,21 +27,26 @@ struct ActionsView: View {
 
     let resetAction: () -> Void
 
+    var fullSwipeIsEnabled: Bool {
+        swipeEdge == .leading ? viewConfig.leadingFullSwipeIsEnabled : viewConfig.trailingFullSwipeIsEnabled
+    }
+
     var body: some View {
         if !actions.isEmpty {
+            Spacer()
             HStack(spacing: 0) {
                 ForEach(actions) { action in
                     let theBorderedOne = theBorderedOne(action)
                     actionButton(action, theBorderedOne)
                 }
             }
-            .frame(width: fullWidth, alignment: swipeEdge.alignment)
-            .animation(.spring(duration: 0.3), value: overdragged)
-            .animation(.spring(duration: 0.3), value: width != 0)
+            .frame(width: containerWidth, alignment: swipeEdge.alignment)
+//            .animation(viewConfig.animation, value: overdragged) // After overdragged
+//            .animation(viewConfig.animation, value: width != 0) // After tap gesture
             .background { backgroundColor }
             .onChange(of: offset) { newValue in
                 self.width = actionWidthValue
-                self.fullWidth = abs(offset)
+                self.fullWidth = abs(offset) + 30
             }
         }
     }

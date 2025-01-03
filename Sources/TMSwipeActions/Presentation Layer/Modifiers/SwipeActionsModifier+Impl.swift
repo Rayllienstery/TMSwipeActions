@@ -15,33 +15,35 @@
 import SwiftUI
 
 public struct SwipeActionsModifier: ViewModifier {
-    typealias ViewConfig = SwipeActionsViewConfig
     
     // MARK: - Private
-    @StateObject private var viewModel: SwipeActionsViewModel
+    @StateObject private var interactor: SwipeActionsInteractor
     @StateObject private var presenter: SwipeActionsPresenter
-    private var viewConfig: ViewConfig
 
     // Size
     @State private var contentWidth: CGFloat = 0 // Core view width
-
-    // Swipe Gesture Properties
-    @StateObject var gestureState: SwipeGestureState = .init()
-    @GestureState private var isDragging = false
+    @StateObject var gestureState: SwipeGestureState
 
     init(leadingActions: [SwipeAction],
          trailingActions: [SwipeAction],
          actionWidth: CGFloat,
-         viewConfig: ViewConfig) {
-        self._viewModel = StateObject(wrappedValue: .init(trailingActions: trailingActions,
-                                                          leadingActions: leadingActions))
+         viewConfig: SwipeActionsViewConfig) {
+        let viewModel = SwipeActionsViewModel(trailingActions: trailingActions,
+                                              leadingActions: leadingActions)
+
         let presenter = SwipeActionsPresenter(actionWidth: actionWidth,
                                               leadingSwipeIsUnlocked: !leadingActions.isEmpty,
                                               trailingSwipeIsUnlocked: !trailingActions.isEmpty,
                                               trailingViewWidth: CGFloat(trailingActions.count) * actionWidth,
                                               leadingViewWidth: CGFloat(leadingActions.count) * actionWidth)
+        let gestureState = SwipeGestureState()
+
         self._presenter = StateObject(wrappedValue: presenter)
-        self.viewConfig = viewConfig
+        self._interactor = StateObject(wrappedValue: .init(viewModel: viewModel,
+                                                           presenter: presenter,
+                                                           gestureState: gestureState,
+                                                           viewConfig: viewConfig))
+        self._gestureState = StateObject(wrappedValue: gestureState)
     }
     
     public func body(content: Content) -> some View {
@@ -51,14 +53,13 @@ public struct SwipeActionsModifier: ViewModifier {
                     GeometryReader { proxy in
                         Color.clear.onAppear { contentWidth = proxy.size.width } }
                 }
-                .offset(x: gestureState.offset)
+                .offset(x: interactor.gestureState.offset)
                 .gesture(
                     DragGesture()
-                        .updating($isDragging) { value, state, _ in state = true }
-                        .onChanged { value in dragOnChanged(translation: value.translation.width) }
-                        .onEnded { _ in dragEnded() }
+                        .onChanged { value in interactor.dragOnChanged(translation: value.translation.width) }
+                        .onEnded { _ in interactor.dragEnded() }
                 )
-                .background(alignment: gestureState.swipeDirection.alignment) { swipeView }
+                .background(alignment: interactor.gestureState.swipeDirection.alignment) { swipeView }
         }
         .clipped()
         .mask { content }
@@ -67,92 +68,29 @@ public struct SwipeActionsModifier: ViewModifier {
     // MARK: - Private
     @ViewBuilder
     private var swipeView: some View {
-        switch gestureState.swipeDirection {
+        switch interactor.gestureState.swipeDirection {
         case .trailing:
-            ActionsView(actions: $viewModel.trailingActions,
-                        offset: $gestureState.offset,
-                        overdragged: $gestureState.overdragged,
+            ActionsView(viewConfig: $interactor.viewConfig,
+                        actions: $interactor.viewModel.trailingActions,
+                        offset: $interactor.gestureState.offset,
+                        overdragged: $interactor.gestureState.overdragged,
                         containerWidth: $contentWidth,
                         swipeEdge: .trailing,
-                        font: viewConfig.font,
+                        font: interactor.viewConfig.font,
                         actionWidth: presenter.actionWidth) {
-                resetOffsetWithAnimation()
+                interactor.resetOffsetWithAnimation()
             }
         case .leading:
-            ActionsView(actions: $viewModel.leadingActions,
-                        offset: $gestureState.offset,
-                        overdragged: $gestureState.overdragged,
+            ActionsView(viewConfig: $interactor.viewConfig,
+                        actions: $interactor.viewModel.leadingActions,
+                        offset: $interactor.gestureState.offset,
+                        overdragged: $interactor.gestureState.overdragged,
                         containerWidth: $contentWidth,
                         swipeEdge: .leading,
-                        font: viewConfig.font,
+                        font: interactor.viewConfig.font,
                         actionWidth: presenter.actionWidth) {
-                resetOffsetWithAnimation()
+                interactor.resetOffsetWithAnimation()
             }
-        }
-    }
-
-    private func resetOffsetWithAnimation() {
-        withAnimation(.spring(duration: 0.3)) {
-            gestureState.offset = 0
-            gestureState.cachedOffset = 0
-            presenter.overdragNotified = false
-        }
-    }
-
-    func dragOnChanged(translation: CGFloat) {
-        let dragAmount = translation
-        var newValue = dragAmount + gestureState.cachedOffset
-
-        if !presenter.leadingSwipeIsUnlocked, newValue > 0 {
-            newValue = 0
-        } else if !presenter.trailingSwipeIsUnlocked, newValue < 0 {
-            newValue = 0
-        }
-
-        let swipeDirection = gestureState.swipeDirection
-        let contentSize = swipeDirection == .leading ? presenter.leadingViewWidth : presenter.trailingViewWidth
-
-        gestureState.setNewOffset(newValue,
-                                  contentSize: contentSize,
-                                  safeWidth: presenter.actionWidth)
-        presenter.callVibroIfNeeded(offset: newValue,
-                                    swipeDirection: swipeDirection)
-    }
-
-    func dragEnded() {
-        switch gestureState.swipeDirection {
-        case .trailing:
-            let dragThreshold = presenter.actionWidth * CGFloat(viewModel.trailingActions.count) / 2
-            if -gestureState.offset > dragThreshold {
-                if viewConfig.trailingFullSwipeIsEnabled,
-                    -gestureState.offset > presenter.trailingViewWidth + presenter.actionWidth {
-                    viewModel.trailingActions.last?.action()
-                    resetOffsetWithAnimation()
-                } else {
-                    withAnimation(.spring(duration: 0.3)) {
-                        gestureState.offset = -presenter.actionWidth * CGFloat(viewModel.trailingActions.count)
-                    }
-                }
-            } else {
-                resetOffsetWithAnimation()
-            }
-            gestureState.cachedOffset = gestureState.offset
-        case .leading:
-            let dragThreshold = presenter.actionWidth * CGFloat(viewModel.leadingActions.count) / 2
-            if viewConfig.leadingFullSwipeIsEnabled,
-               gestureState.offset > dragThreshold {
-                if gestureState.offset > presenter.leadingViewWidth + presenter.actionWidth {
-                    viewModel.leadingActions.first?.action()
-                    resetOffsetWithAnimation()
-                } else {
-                    withAnimation(.spring(duration: 0.3)) {
-                        gestureState.offset = presenter.actionWidth * CGFloat(viewModel.leadingActions.count)
-                    }
-                }
-            } else {
-                resetOffsetWithAnimation()
-            }
-            gestureState.cachedOffset = gestureState.offset
         }
     }
 }

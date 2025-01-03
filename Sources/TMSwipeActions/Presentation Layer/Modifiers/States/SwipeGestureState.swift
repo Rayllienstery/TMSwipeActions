@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 class SwipeGestureState: ObservableObject {
     @Published var offset: CGFloat = 0
@@ -13,9 +14,9 @@ class SwipeGestureState: ObservableObject {
     @Published var swipeDirection: SwipeEdge = .trailing
     @Published var overdragged: Bool = false // Responsible for the width of the closest to the border button
 
-    func setNewOffset(_ newValue: CGFloat, contentSize: CGFloat, safeWidth: CGFloat) {
+    func setNewOffset(_ newValue: CGFloat, contentSize: CGFloat, safeWidth: CGFloat, fullSwipeIsEnabled: Bool) {
         self.offset = newValue
-        self.swipeDirection = self.offset >= 0 ? .leading : .trailing
-        overdragged = abs(offset) >= contentSize + safeWidth
+        self.swipeDirection = offset >= 0 ? .leading : .trailing
+        self.overdragged = fullSwipeIsEnabled ? abs(offset) >= contentSize + safeWidth : false
     }
 }
