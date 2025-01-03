@@ -7,10 +7,11 @@
 
 // TODO: - Reverse auto action from overdrag
 // TODO: - Gesture area
-// TODO: - Demo Gesture
 // TODO: - Tap on the opened button will close content view
+// TODO: - Appearance Manager
 
-// FIXME: - Leading full gesture icon pos
+// FIXME: - end gesture animation smoothing
+
 
 import SwiftUI
 
@@ -61,6 +62,7 @@ public struct SwipeActionsModifier: ViewModifier {
             content
                 .background {
                     GeometryReader { proxy in
+                        // Fetching Container View Width
                         Color.clear.onAppear { contentWidth = proxy.size.width } }
                 }
                 .offset(x: interactor.gestureState.offset)

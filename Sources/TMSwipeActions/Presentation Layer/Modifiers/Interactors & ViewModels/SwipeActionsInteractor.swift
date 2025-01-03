@@ -39,12 +39,17 @@ class SwipeActionsInteractor: ObservableObject {
     }
 
     func resetOffsetWithAnimation() {
-        withAnimation {
+        print("\(#function) called")
+        withAnimation(nil) {
             self.isLeadingContentVisible.wrappedValue = false
             self.isTrailingContentVisible.wrappedValue = false
-            self.gestureState.offset = 0
-            self.gestureState.cachedOffset = 0
             self.presenter.overdragNotified = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            withAnimation {
+                self.gestureState.offset = 0
+                self.gestureState.cachedOffset = 0
+            }
         }
     }
 
@@ -55,9 +60,9 @@ class SwipeActionsInteractor: ObservableObject {
     func showLeadingContent(flag: Bool) {
         switch flag {
         case true:
-            withAnimation {
+            withAnimation(.easeOut) {
                 self.gestureState.offset = presenter.leadingViewWidth
-                self.gestureState.cachedOffset = -presenter.leadingViewWidth
+                self.gestureState.cachedOffset = presenter.leadingViewWidth
             }
         case false:
             resetOffsetWithAnimation()
@@ -65,10 +70,11 @@ class SwipeActionsInteractor: ObservableObject {
     }
 
     func showTrailingContent(flag: Bool) {
+        print("showTrailingContent called, \(presenter.trailingViewWidth)")
         switch flag {
         case true:
-            withAnimation {
-                self.gestureState.offset = -presenter.trailingViewWidth
+            withAnimation(.easeOut) {
+                self.offset = -presenter.trailingViewWidth
                 self.gestureState.cachedOffset = -presenter.trailingViewWidth
             }
         case false:
@@ -103,18 +109,22 @@ extension SwipeActionsInteractor {
         if offset > dragThreshold {
             // Full Swipe Case
             if fullGestureIsEnabled, offset > fullSwipeWidth {
+                print("fullGestureIsEnabled called")
                 borderedAction?.action()
                 resetOffsetWithAnimation()
             }
             // Show buttons
             else {
-                let newOffset = (gestureState.swipeDirection == .leading ? actionWidth : -actionWidth) * actionsCount
                 withAnimation {
-                    self.gestureState.offset = newOffset
-                    self.gestureState.cachedOffset = newOffset
+                    print("Show buttons called")
+                    switch gestureState.swipeDirection {
+                    case .leading: showLeadingContent(flag: true)
+                    case .trailing: showTrailingContent(flag: true)
+                    }
+//                    let newOffset = (gestureState.swipeDirection == .leading ? actionWidth : -actionWidth) * actionsCount
+//                    self.offset = newOffset
+//                    self.gestureState.cachedOffset = newOffset
                 }
-//                self.offset = newOffset
-//                gestureState.cachedOffset = newOffset
             }
         }
         // Swipe will do nothing and will hide buttons
@@ -148,14 +158,13 @@ extension SwipeActionsInteractor {
             .throttle(for: .seconds(1 / 60), scheduler: DispatchQueue.main, latest: true)
             .sink(receiveValue: { [weak self] newValue in
                 guard let self else { return }
-                let fullSwipeIsEnabled = fullGestureIsEnabled
                 let swipeDirection = gestureState.swipeDirection
                 let contentSize = swipeDirection == .leading ? presenter.leadingViewWidth : presenter.trailingViewWidth
 
                 gestureState.setNewOffset(newValue,
                                           contentSize: contentSize,
                                           safeWidth: presenter.actionWidth,
-                                          fullSwipeIsEnabled:  fullSwipeIsEnabled)
+                                          fullSwipeIsEnabled:  fullGestureIsEnabled)
                 presenter.callVibroIfNeeded(offset: newValue,
                                             swipeDirection: swipeDirection)
             })
