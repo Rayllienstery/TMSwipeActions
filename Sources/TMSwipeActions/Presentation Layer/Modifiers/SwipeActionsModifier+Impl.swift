@@ -5,15 +5,12 @@
 //  Created by Kostiantyn Kolosov on 20.12.2024.
 //
 
-// TODO: - func showTrailingContent()
-// TODO: - func showLeadingContent()
 // TODO: - Reverse auto action from overdrag
 // TODO: - Gesture area
 // TODO: - Demo Gesture
+// TODO: - Tap on the opened button will close content view
 
-// FIXME: - Animation and appearance for swipe, check how it works for the native swipe
-// FIXME: - Trailing
-// FIXME: - Offset cache bug
+// FIXME: - Leading full gesture icon pos
 
 import SwiftUI
 
@@ -26,7 +23,7 @@ public struct SwipeActionsModifier: ViewModifier {
     @StateObject private var presenter: SwipeActionsPresenter
 
     // Size
-    @State private var contentWidth: CGFloat = 0 // Core view width
+    @State private var contentWidth: CGFloat = 0
     @StateObject var gestureState: SwipeGestureState
 
     init(leadingActions: [SwipeAction],

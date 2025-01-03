@@ -40,6 +40,7 @@ class SwipeActionsInteractor: ObservableObject {
 
     func resetOffsetWithAnimation() {
         withAnimation {
+            self.isLeadingContentVisible.wrappedValue = false
             self.isTrailingContentVisible.wrappedValue = false
             self.gestureState.offset = 0
             self.gestureState.cachedOffset = 0
@@ -147,14 +148,10 @@ extension SwipeActionsInteractor {
             .throttle(for: .seconds(1 / 60), scheduler: DispatchQueue.main, latest: true)
             .sink(receiveValue: { [weak self] newValue in
                 guard let self else { return }
-
-                let fullSwipeIsEnabled = switch newValue {
-                case let newValue where newValue > 0: viewConfig.leadingFullSwipeIsEnabled
-                case let newValue where newValue < 0: viewConfig.trailingFullSwipeIsEnabled
-                default: false }
-
+                let fullSwipeIsEnabled = fullGestureIsEnabled
                 let swipeDirection = gestureState.swipeDirection
                 let contentSize = swipeDirection == .leading ? presenter.leadingViewWidth : presenter.trailingViewWidth
+
                 gestureState.setNewOffset(newValue,
                                           contentSize: contentSize,
                                           safeWidth: presenter.actionWidth,

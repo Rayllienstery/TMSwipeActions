@@ -22,6 +22,9 @@ extension ActionsView {
     @ViewBuilder
     private func actionButtonLabel(_ action: SwipeAction, _ theBorderedOne: Bool) -> some View {
         HStack {
+            if overdragged, theBorderedOne, fullSwipeIsEnabled, swipeEdge == .leading {
+                Spacer()
+            }
             if let icon = action.icon {
                 Image(uiImage: icon)
                     .renderingMode(.template)
@@ -32,14 +35,14 @@ extension ActionsView {
             } else {
                 Text("Error")
             }
-            if overdragged, theBorderedOne, fullSwipeIsEnabled {
+            if overdragged, theBorderedOne, fullSwipeIsEnabled, swipeEdge == .trailing {
                 Spacer()
             }
         }
         .minimumScaleFactor(0.03)
         .font(font)
         .padding(.horizontal)
-        .padding(.leading, overdragged ? 30 : 0)
+        .padding(swipeEdge == .leading ? .trailing : .leading, overdragged ? 30 : 0)
         .foregroundStyle(.white)
         .frame(width: overdragged ? (theBorderedOne ? fullWidth : 0) : width)
         .frame(maxHeight: .infinity)
