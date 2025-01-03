@@ -45,52 +45,72 @@ class SwipeActionsInteractor: ObservableObject {
     }
 
     func dragEnded() {
-        switch gestureState.swipeDirection {
-        case .trailing:
-            let dragThreshold = presenter.actionWidth * CGFloat(viewModel.trailingActions.count) / 2
-            if -gestureState.offset > dragThreshold {
-                if viewConfig.trailingFullSwipeIsEnabled,
-                   -gestureState.offset > presenter.trailingViewWidth + presenter.actionWidth {
-                    viewModel.trailingActions.last?.action()
-                    resetOffsetWithAnimation()
-                } else {
-//                    withAnimation(viewConfig.animation) {
-                    gestureState.offset = -presenter.actionWidth * CGFloat(viewModel.trailingActions.count)
-//                    }
-                }
-            } else {
+        let actionsCount = CGFloat(actionsCount)
+        let actionWidth = presenter.actionWidth
+        let dragThreshold = presenter.actionWidth * actionsCount / 2
+        let offset = abs(gestureState.offset)
+        let fullSwipeWidth = viewWidth + actionWidth
+
+        // Swipe will do something case
+        if offset > dragThreshold {
+            // Full Swipe Case
+            if fullGestureIsEnabled, offset > fullSwipeWidth {
+                borderedAction?.action()
                 resetOffsetWithAnimation()
             }
-            gestureState.cachedOffset = gestureState.offset
-        case .leading:
-            let dragThreshold = presenter.actionWidth * CGFloat(viewModel.leadingActions.count) / 2
-            if viewConfig.leadingFullSwipeIsEnabled,
-               gestureState.offset > dragThreshold {
-                if gestureState.offset > presenter.leadingViewWidth + presenter.actionWidth {
-                    viewModel.leadingActions.first?.action()
-                    resetOffsetWithAnimation()
-                } else {
-//                    withAnimation(viewConfig.animation) {
-                    gestureState.offset = presenter.actionWidth * CGFloat(viewModel.leadingActions.count)
-//                    }
-                }
-            } else {
-                resetOffsetWithAnimation()
+            // Show buttons
+            else {
+                let newOffset = (gestureState.swipeDirection == .leading ? actionWidth : -actionWidth) * actionsCount
+                self.offset = newOffset
+                gestureState.cachedOffset = newOffset
+                print("New Offset: \(newOffset)")
+                print(gestureState.cachedOffset)
             }
-            gestureState.cachedOffset = gestureState.offset
         }
+        // Swipe will do nothing and will hide buttons
+        else {
+            resetOffsetWithAnimation()
+        }
+        print("Offset: \(offset)")
     }
 
     func resetOffsetWithAnimation() {
-//        withAnimation(viewConfig.animation) {
-        gestureState.offset = 0
-        gestureState.cachedOffset = 0
-            presenter.overdragNotified = false
-//        }
+        withAnimation {
+            self.gestureState.offset = 0
+            self.gestureState.cachedOffset = 0
+            self.presenter.overdragNotified = false
+        }
     }
 
     func updateOffset(_ newOffset: CGFloat) {
         self.offset = newOffset
+    }
+
+    // MARK: - Private
+
+    private var fullGestureIsEnabled: Bool {
+        switch gestureState.swipeDirection {
+        case .leading: viewConfig.leadingFullSwipeIsEnabled
+        case .trailing: viewConfig.trailingFullSwipeIsEnabled }
+    }
+
+    private var actionsCount: Int {
+        switch gestureState.swipeDirection {
+        case .trailing: viewModel.trailingActions.count
+        case .leading: viewModel.leadingActions.count }
+    }
+
+    private var viewWidth: CGFloat {
+        switch gestureState.swipeDirection {
+        case .trailing: presenter.trailingViewWidth
+        case .leading: presenter.leadingViewWidth }
+    }
+
+    private var borderedAction: SwipeAction? {
+        switch gestureState.swipeDirection {
+        case .trailing: viewModel.trailingActions.last
+        case .leading: viewModel.trailingActions.first
+        }
     }
 
     private func initObservers() {

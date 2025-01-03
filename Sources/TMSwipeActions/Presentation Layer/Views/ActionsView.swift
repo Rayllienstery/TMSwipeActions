@@ -42,7 +42,7 @@ struct ActionsView: View {
             }
             .frame(width: containerWidth, alignment: swipeEdge.alignment)
 //            .animation(viewConfig.animation, value: overdragged) // After overdragged
-//            .animation(viewConfig.animation, value: width != 0) // After tap gesture
+            .animation(viewConfig.animation, value: width != 0) // After tap gesture
             .background { backgroundColor }
             .onChange(of: offset) { newValue in
                 self.width = actionWidthValue
