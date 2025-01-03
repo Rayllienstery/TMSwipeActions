@@ -17,6 +17,12 @@ class SwipeGestureState: ObservableObject {
     func setNewOffset(_ newValue: CGFloat, contentSize: CGFloat, safeWidth: CGFloat, fullSwipeIsEnabled: Bool) {
         self.offset = newValue
         self.swipeDirection = offset >= 0 ? .leading : .trailing
-        self.overdragged = fullSwipeIsEnabled ? abs(offset) >= contentSize + safeWidth : false
+        
+        let newOverdraggedValue = fullSwipeIsEnabled ? abs(offset) >= contentSize + safeWidth : false
+        if newOverdraggedValue != self.overdragged {
+            withAnimation {
+                self.overdragged.toggle()
+            }
+        }
     }
 }

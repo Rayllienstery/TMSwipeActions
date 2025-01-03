@@ -6,11 +6,13 @@
 //
 
 // TODO: - func showTrailingContent()
+// TODO: - func showLeadingContent()
 // TODO: - Reverse auto action from overdrag
 // TODO: - fluid width
 // TODO: - Gesture area
 
 // FIXME: - Animation and appearance for swipe, check how it works for the native swipe
+// FIXME: - Trailing
 
 import SwiftUI
 

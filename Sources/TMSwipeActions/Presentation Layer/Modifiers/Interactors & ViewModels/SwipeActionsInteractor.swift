@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 class SwipeActionsInteractor: ObservableObject {
     @Published var viewModel: SwipeActionsViewModel
@@ -13,6 +14,10 @@ class SwipeActionsInteractor: ObservableObject {
     @Published var gestureState: SwipeGestureState
 
     @Published var viewConfig: SwipeActionsViewConfig
+
+    @Published var offset: CGFloat = 0
+
+    private var subscriptions: Set<AnyCancellable> = []
 
     init(viewModel: SwipeActionsViewModel,
          presenter: SwipeActionsPresenter,
@@ -22,6 +27,8 @@ class SwipeActionsInteractor: ObservableObject {
         self.presenter = presenter
         self.gestureState = gestureState
         self.viewConfig = viewConfig
+
+        self.initObservers()
     }
 
     func dragOnChanged(translation: CGFloat) {
@@ -34,21 +41,7 @@ class SwipeActionsInteractor: ObservableObject {
             newValue = 0
         }
 
-        let swipeDirection = gestureState.swipeDirection
-        let contentSize = swipeDirection == .leading ? presenter.leadingViewWidth : presenter.trailingViewWidth
-
-        let fullSwipeIsEnabled = switch newValue {
-        case let newValue where newValue > 0: viewConfig.leadingFullSwipeIsEnabled
-        case let newValue where newValue < 0: viewConfig.trailingFullSwipeIsEnabled
-        default: false
-        }
-
-        gestureState.setNewOffset(newValue,
-                                  contentSize: contentSize,
-                                  safeWidth: presenter.actionWidth,
-                                  fullSwipeIsEnabled:  fullSwipeIsEnabled)
-        presenter.callVibroIfNeeded(offset: newValue,
-                                    swipeDirection: swipeDirection)
+        self.offset = newValue
     }
 
     func dragEnded() {
@@ -94,5 +87,33 @@ class SwipeActionsInteractor: ObservableObject {
         gestureState.cachedOffset = 0
             presenter.overdragNotified = false
 //        }
+    }
+
+    func updateOffset(_ newOffset: CGFloat) {
+        self.offset = newOffset
+    }
+
+    private func initObservers() {
+        $offset
+            .dropFirst()
+            .throttle(for: .seconds(1 / 60), scheduler: DispatchQueue.main, latest: true)
+            .sink(receiveValue: { [weak self] newValue in
+                guard let self else { return }
+
+                let fullSwipeIsEnabled = switch newValue {
+                case let newValue where newValue > 0: viewConfig.leadingFullSwipeIsEnabled
+                case let newValue where newValue < 0: viewConfig.trailingFullSwipeIsEnabled
+                default: false }
+
+                let swipeDirection = gestureState.swipeDirection
+                let contentSize = swipeDirection == .leading ? presenter.leadingViewWidth : presenter.trailingViewWidth
+                gestureState.setNewOffset(newValue,
+                                          contentSize: contentSize,
+                                          safeWidth: presenter.actionWidth,
+                                          fullSwipeIsEnabled:  fullSwipeIsEnabled)
+                presenter.callVibroIfNeeded(offset: newValue,
+                                            swipeDirection: swipeDirection)
+            })
+            .store(in: &subscriptions)
     }
 }
