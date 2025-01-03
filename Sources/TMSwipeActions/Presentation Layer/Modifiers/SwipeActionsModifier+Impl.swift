@@ -8,8 +8,8 @@
 // TODO: - func showTrailingContent()
 // TODO: - func showLeadingContent()
 // TODO: - Reverse auto action from overdrag
-// TODO: - fluid width
 // TODO: - Gesture area
+// TODO: - Demo Gesture
 
 // FIXME: - Animation and appearance for swipe, check how it works for the native swipe
 // FIXME: - Trailing
@@ -18,6 +18,8 @@
 import SwiftUI
 
 public struct SwipeActionsModifier: ViewModifier {
+    @Binding var trailingContentIsPresented: Bool
+    @Binding var leadingContentIsPresented: Bool
     
     // MARK: - Private
     @StateObject private var interactor: SwipeActionsInteractor
@@ -30,7 +32,9 @@ public struct SwipeActionsModifier: ViewModifier {
     init(leadingActions: [SwipeAction],
          trailingActions: [SwipeAction],
          actionWidth: CGFloat,
-         viewConfig: SwipeActionsViewConfig) {
+         viewConfig: SwipeActionsViewConfig,
+         leadingContentIsPresented: Binding<Bool>,
+         trailingContentIsPresented: Binding<Bool>) {
         let viewModel = SwipeActionsViewModel(trailingActions: trailingActions,
                                               leadingActions: leadingActions)
 
@@ -41,11 +45,17 @@ public struct SwipeActionsModifier: ViewModifier {
                                               leadingViewWidth: CGFloat(leadingActions.count) * actionWidth)
         let gestureState = SwipeGestureState()
 
+        self._leadingContentIsPresented = leadingContentIsPresented
+        self._trailingContentIsPresented = trailingContentIsPresented
+
         self._presenter = StateObject(wrappedValue: presenter)
-        self._interactor = StateObject(wrappedValue: .init(viewModel: viewModel,
-                                                           presenter: presenter,
-                                                           gestureState: gestureState,
-                                                           viewConfig: viewConfig))
+        self._interactor = StateObject(wrappedValue: .init(
+            viewModel: viewModel,
+            presenter: presenter,
+            gestureState: gestureState,
+            viewConfig: viewConfig,
+            isLeadingContentVisible: leadingContentIsPresented,
+            isTrailingContentVisible: trailingContentIsPresented))
         self._gestureState = StateObject(wrappedValue: gestureState)
     }
     
@@ -66,6 +76,12 @@ public struct SwipeActionsModifier: ViewModifier {
         }
         .clipped()
         .mask { content }
+        .onChange(of: leadingContentIsPresented) { newValue in
+            interactor.showLeadingContent(flag: leadingContentIsPresented)
+        }
+        .onChange(of: trailingContentIsPresented) { newValue in
+            interactor.showTrailingContent(flag: trailingContentIsPresented)
+        }
     }
 
     // MARK: - Private

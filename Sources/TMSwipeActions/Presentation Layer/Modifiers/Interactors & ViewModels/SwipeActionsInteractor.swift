@@ -17,20 +17,67 @@ class SwipeActionsInteractor: ObservableObject {
 
     @Published var offset: CGFloat = 0
 
+    var isLeadingContentVisible: Binding<Bool>
+    var isTrailingContentVisible: Binding<Bool>
+
     private var subscriptions: Set<AnyCancellable> = []
 
     init(viewModel: SwipeActionsViewModel,
          presenter: SwipeActionsPresenter,
          gestureState: SwipeGestureState,
-         viewConfig: SwipeActionsViewConfig) {
+         viewConfig: SwipeActionsViewConfig,
+         isLeadingContentVisible: Binding<Bool>,
+         isTrailingContentVisible: Binding<Bool>) {
         self.viewModel = viewModel
         self.presenter = presenter
         self.gestureState = gestureState
         self.viewConfig = viewConfig
+        self.isLeadingContentVisible = isLeadingContentVisible
+        self.isTrailingContentVisible = isTrailingContentVisible
 
         self.initObservers()
     }
 
+    func resetOffsetWithAnimation() {
+        withAnimation {
+            self.isTrailingContentVisible.wrappedValue = false
+            self.gestureState.offset = 0
+            self.gestureState.cachedOffset = 0
+            self.presenter.overdragNotified = false
+        }
+    }
+
+    func updateOffset(_ newOffset: CGFloat) {
+        self.offset = newOffset
+    }
+
+    func showLeadingContent(flag: Bool) {
+        switch flag {
+        case true:
+            withAnimation {
+                self.gestureState.offset = presenter.leadingViewWidth
+                self.gestureState.cachedOffset = -presenter.leadingViewWidth
+            }
+        case false:
+            resetOffsetWithAnimation()
+        }
+    }
+
+    func showTrailingContent(flag: Bool) {
+        switch flag {
+        case true:
+            withAnimation {
+                self.gestureState.offset = -presenter.trailingViewWidth
+                self.gestureState.cachedOffset = -presenter.trailingViewWidth
+            }
+        case false:
+            resetOffsetWithAnimation()
+        }
+    }
+}
+
+// MARK: - Gesture
+extension SwipeActionsInteractor {
     func dragOnChanged(translation: CGFloat) {
         let dragAmount = translation
         var newValue = dragAmount + gestureState.cachedOffset
@@ -61,37 +108,18 @@ class SwipeActionsInteractor: ObservableObject {
             // Show buttons
             else {
                 let newOffset = (gestureState.swipeDirection == .leading ? actionWidth : -actionWidth) * actionsCount
-                self.offset = newOffset
-                gestureState.cachedOffset = newOffset
-                print("New Offset: \(newOffset)")
-                print(gestureState.cachedOffset)
+                withAnimation {
+                    self.gestureState.offset = newOffset
+                    self.gestureState.cachedOffset = newOffset
+                }
+//                self.offset = newOffset
+//                gestureState.cachedOffset = newOffset
             }
         }
         // Swipe will do nothing and will hide buttons
         else {
             resetOffsetWithAnimation()
         }
-        print("Offset: \(offset)")
-    }
-
-    func resetOffsetWithAnimation() {
-        withAnimation {
-            self.gestureState.offset = 0
-            self.gestureState.cachedOffset = 0
-            self.presenter.overdragNotified = false
-        }
-    }
-
-    func updateOffset(_ newOffset: CGFloat) {
-        self.offset = newOffset
-    }
-
-    // MARK: - Private
-
-    private var fullGestureIsEnabled: Bool {
-        switch gestureState.swipeDirection {
-        case .leading: viewConfig.leadingFullSwipeIsEnabled
-        case .trailing: viewConfig.trailingFullSwipeIsEnabled }
     }
 
     private var actionsCount: Int {
@@ -135,5 +163,11 @@ class SwipeActionsInteractor: ObservableObject {
                                             swipeDirection: swipeDirection)
             })
             .store(in: &subscriptions)
+    }
+
+    private var fullGestureIsEnabled: Bool {
+        switch gestureState.swipeDirection {
+        case .leading: viewConfig.leadingFullSwipeIsEnabled
+        case .trailing: viewConfig.trailingFullSwipeIsEnabled }
     }
 }
