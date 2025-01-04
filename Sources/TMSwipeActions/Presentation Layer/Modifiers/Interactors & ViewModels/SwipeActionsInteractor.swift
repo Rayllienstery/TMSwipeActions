@@ -40,66 +40,30 @@ class SwipeActionsInteractor: ObservableObject {
         self.initObservers()
     }
 
-    func resetOffsetWithAnimation() {
-        print("\(#function) called")
+    func updateContent(visibility: SwipeContentVisibility) {
+        print(#function, visibility)
         ignoreContentChanging = true
-        self.isLeadingContentVisible.wrappedValue = false
-        self.isTrailingContentVisible.wrappedValue = false
+        self.isLeadingContentVisible.wrappedValue = visibility == .leading
+        self.isTrailingContentVisible.wrappedValue = visibility == .trailing
         self.presenter.overdragNotified = false
+        self.gestureState.overdragged = false
+        if visibility != .hidden {
+            self.gestureState.swipeDirection = visibility == .leading ? .leading : .trailing
+        }
         ignoreContentChanging = false
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        let newOffset = switch visibility {
+        case .hidden: CGFloat.zero
+        case .leading: self.presenter.leadingViewWidth
+        case .trailing: -self.presenter.trailingViewWidth
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            guard let self else { return }
             withAnimation {
-                self.gestureState.offset = 0
-                self.gestureState.cachedOffset = 0
+                self.gestureState.offset = newOffset
+                self.gestureState.cachedOffset = newOffset
             }
-        }
-    }
-
-    func updateOffset(_ newOffset: CGFloat) {
-        self.offset = newOffset
-    }
-
-    func showLeadingContent(flag: Bool) {
-        switch flag {
-        case true:
-            ignoreContentChanging = true
-            self.isLeadingContentVisible.wrappedValue = true
-            self.isTrailingContentVisible.wrappedValue = false
-            self.presenter.overdragNotified = false
-            ignoreContentChanging = false
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-                guard let self else { return }
-                withAnimation {
-                    self.gestureState.offset = self.presenter.leadingViewWidth
-                    self.gestureState.cachedOffset = self.presenter.leadingViewWidth
-                }
-            }
-        case false:
-            resetOffsetWithAnimation()
-        }
-    }
-
-    func showTrailingContent(flag: Bool) {
-        print(#function)
-        switch flag {
-        case true:
-            ignoreContentChanging = true
-            self.isLeadingContentVisible.wrappedValue = false
-            self.isTrailingContentVisible.wrappedValue = true
-            self.presenter.overdragNotified = false
-            ignoreContentChanging = false
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-                guard let self else { return }
-                withAnimation {
-                    self.gestureState.offset = -self.presenter.trailingViewWidth
-                    self.gestureState.cachedOffset = -self.presenter.trailingViewWidth
-                }
-            }
-        case false:
-            resetOffsetWithAnimation()
         }
     }
 }
@@ -130,24 +94,22 @@ extension SwipeActionsInteractor {
         if offset > dragThreshold {
             // Full Swipe Case
             if fullGestureIsEnabled, offset > fullSwipeWidth {
-                print("fullGestureIsEnabled called")
                 borderedAction?.action()
-                resetOffsetWithAnimation()
+                updateContent(visibility: .hidden)
             }
             // Show buttons
             else {
                 withAnimation {
-                    print("Show buttons called")
                     switch gestureState.swipeDirection {
-                    case .leading: showLeadingContent(flag: true)
-                    case .trailing: showTrailingContent(flag: true)
+                    case .leading: updateContent(visibility: .leading)
+                    case .trailing: updateContent(visibility: .trailing)
                     }
                 }
             }
         }
         // Swipe will do nothing and will hide buttons
         else {
-            resetOffsetWithAnimation()
+            updateContent(visibility: .hidden)
         }
     }
 
@@ -194,4 +156,10 @@ extension SwipeActionsInteractor {
         case .leading: viewConfig.leadingFullSwipeIsEnabled
         case .trailing: viewConfig.trailingFullSwipeIsEnabled }
     }
+}
+
+enum SwipeContentVisibility {
+    case hidden
+    case leading
+    case trailing
 }

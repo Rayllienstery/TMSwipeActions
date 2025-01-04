@@ -19,7 +19,7 @@ struct ActionsView: View {
 
     @State var swipeEdge: SwipeEdge
 
-    @State var width: CGFloat = 0
+    @State var width: CGFloat = 0 { didSet { print("width: \(width) \(overdragged)") } }
     @State var fullWidth: CGFloat = 0
 
     var font: Font
@@ -33,12 +33,12 @@ struct ActionsView: View {
 
     var body: some View {
         if !actions.isEmpty {
-            Spacer()
             HStack(spacing: 0) {
+//                if swipeEdge.alignment != .leading { Spacer() }
                 ForEach(actions) { action in
-                    let theBorderedOne = theBorderedOne(action)
-                    actionButton(action, theBorderedOne)
+                    actionButton(action, theBorderedOne(action))
                 }
+//                if swipeEdge.alignment != .trailing { Spacer() }
             }
             .frame(width: containerWidth, alignment: swipeEdge.alignment)
             .animation(viewConfig.animation, value: width != 0) // After tap gesture

@@ -7,9 +7,7 @@
 
 // TODO: - Gesture area
 // TODO: - Appearance Manager
-
-// FIXME: - end gesture animation smoothing
-
+// TODO: - View as button in content view
 
 import SwiftUI
 
@@ -73,7 +71,7 @@ public struct SwipeActionsModifier: ViewModifier {
                 .overlay {
                     if gestureState.cachedOffset != 0 {
                         Button {
-                            interactor.resetOffsetWithAnimation()
+                            interactor.updateContent(visibility: .hidden)
                         } label: {
                             Color.clear
                                 .contentShape(Rectangle())
@@ -91,11 +89,11 @@ public struct SwipeActionsModifier: ViewModifier {
         .mask { content }
         .onChange(of: leadingContentIsPresented) { newValue in
             guard !interactor.ignoreContentChanging else { return }
-            interactor.showLeadingContent(flag: leadingContentIsPresented)
+            interactor.updateContent(visibility: leadingContentIsPresented ? .leading : .hidden)
         }
         .onChange(of: trailingContentIsPresented) { newValue in
             guard !interactor.ignoreContentChanging else { return }
-            interactor.showTrailingContent(flag: trailingContentIsPresented)
+            interactor.updateContent(visibility: trailingContentIsPresented ? .trailing : .hidden)
         }
     }
 
@@ -112,7 +110,7 @@ public struct SwipeActionsModifier: ViewModifier {
                         swipeEdge: .trailing,
                         font: interactor.viewConfig.font,
                         actionWidth: presenter.actionWidth) {
-                interactor.resetOffsetWithAnimation()
+                interactor.updateContent(visibility: .hidden)
             }
         case .leading:
             ActionsView(viewConfig: $interactor.viewConfig,
@@ -123,7 +121,7 @@ public struct SwipeActionsModifier: ViewModifier {
                         swipeEdge: .leading,
                         font: interactor.viewConfig.font,
                         actionWidth: presenter.actionWidth) {
-                interactor.resetOffsetWithAnimation()
+                interactor.updateContent(visibility: .hidden)
             }
         }
     }
