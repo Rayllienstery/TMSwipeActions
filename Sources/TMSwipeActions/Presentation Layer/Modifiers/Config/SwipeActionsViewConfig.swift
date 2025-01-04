@@ -11,8 +11,6 @@ public class SwipeActionsViewConfig {
     // Static
     public static let defaultActionWidth: CGFloat = 70
 
-    let animation: Animation? = .default
-
     let leadingFullSwipeIsEnabled: Bool
     let trailingFullSwipeIsEnabled: Bool
 

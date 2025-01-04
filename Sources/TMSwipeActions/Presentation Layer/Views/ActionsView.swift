@@ -41,7 +41,7 @@ struct ActionsView: View {
 //                if swipeEdge.alignment != .trailing { Spacer() }
             }
             .frame(width: containerWidth, alignment: swipeEdge.alignment)
-            .animation(viewConfig.animation, value: width != 0) // After tap gesture
+            .animation(.default, value: width != 0) // After tap gesture
             .background { backgroundColor }
             .onChange(of: offset) { newValue in
                 self.width = actionWidthValue
