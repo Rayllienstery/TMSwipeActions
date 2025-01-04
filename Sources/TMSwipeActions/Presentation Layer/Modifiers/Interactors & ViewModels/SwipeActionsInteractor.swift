@@ -17,6 +17,8 @@ class SwipeActionsInteractor: ObservableObject {
 
     @Published var offset: CGFloat = 0
 
+    @Published var ignoreContentChanging: Bool = false
+
     var isLeadingContentVisible: Binding<Bool>
     var isTrailingContentVisible: Binding<Bool>
 
@@ -40,11 +42,12 @@ class SwipeActionsInteractor: ObservableObject {
 
     func resetOffsetWithAnimation() {
         print("\(#function) called")
-        withAnimation(nil) {
-            self.isLeadingContentVisible.wrappedValue = false
-            self.isTrailingContentVisible.wrappedValue = false
-            self.presenter.overdragNotified = false
-        }
+        ignoreContentChanging = true
+        self.isLeadingContentVisible.wrappedValue = false
+        self.isTrailingContentVisible.wrappedValue = false
+        self.presenter.overdragNotified = false
+        ignoreContentChanging = false
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             withAnimation {
                 self.gestureState.offset = 0
@@ -60,9 +63,18 @@ class SwipeActionsInteractor: ObservableObject {
     func showLeadingContent(flag: Bool) {
         switch flag {
         case true:
-            withAnimation(.easeOut) {
-                self.gestureState.offset = presenter.leadingViewWidth
-                self.gestureState.cachedOffset = presenter.leadingViewWidth
+            ignoreContentChanging = true
+            self.isLeadingContentVisible.wrappedValue = true
+            self.isTrailingContentVisible.wrappedValue = false
+            self.presenter.overdragNotified = false
+            ignoreContentChanging = false
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                guard let self else { return }
+                withAnimation {
+                    self.gestureState.offset = self.presenter.leadingViewWidth
+                    self.gestureState.cachedOffset = self.presenter.leadingViewWidth
+                }
             }
         case false:
             resetOffsetWithAnimation()
@@ -70,12 +82,21 @@ class SwipeActionsInteractor: ObservableObject {
     }
 
     func showTrailingContent(flag: Bool) {
-        print("showTrailingContent called, \(presenter.trailingViewWidth)")
+        print(#function)
         switch flag {
         case true:
-            withAnimation(.easeOut) {
-                self.offset = -presenter.trailingViewWidth
-                self.gestureState.cachedOffset = -presenter.trailingViewWidth
+            ignoreContentChanging = true
+            self.isLeadingContentVisible.wrappedValue = false
+            self.isTrailingContentVisible.wrappedValue = true
+            self.presenter.overdragNotified = false
+            ignoreContentChanging = false
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                guard let self else { return }
+                withAnimation {
+                    self.gestureState.offset = -self.presenter.trailingViewWidth
+                    self.gestureState.cachedOffset = -self.presenter.trailingViewWidth
+                }
             }
         case false:
             resetOffsetWithAnimation()
@@ -121,9 +142,6 @@ extension SwipeActionsInteractor {
                     case .leading: showLeadingContent(flag: true)
                     case .trailing: showTrailingContent(flag: true)
                     }
-//                    let newOffset = (gestureState.swipeDirection == .leading ? actionWidth : -actionWidth) * actionsCount
-//                    self.offset = newOffset
-//                    self.gestureState.cachedOffset = newOffset
                 }
             }
         }

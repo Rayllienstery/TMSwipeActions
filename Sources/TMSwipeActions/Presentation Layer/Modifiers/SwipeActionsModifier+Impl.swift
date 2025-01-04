@@ -5,7 +5,6 @@
 //  Created by Kostiantyn Kolosov on 20.12.2024.
 //
 
-// TODO: - Reverse auto action from overdrag
 // TODO: - Gesture area
 // TODO: - Appearance Manager
 
@@ -70,25 +69,31 @@ public struct SwipeActionsModifier: ViewModifier {
                         .onChanged { value in interactor.dragOnChanged(translation: value.translation.width) }
                         .onEnded { _ in interactor.dragEnded() }
                 )
-                .background(alignment: interactor.gestureState.swipeDirection.alignment) { swipeView }
+                .background(alignment: gestureState.swipeDirection.alignment) { swipeView }
                 .overlay {
-                    if interactor.gestureState.offset != 0 {
+                    if gestureState.cachedOffset != 0 {
                         Button {
                             interactor.resetOffsetWithAnimation()
                         } label: {
-                            Rectangle()
-                                .opacity(.zero)
-                                .offset(x: interactor.gestureState.offset)
+                            Color.clear
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { value in interactor.dragOnChanged(translation: value.translation.width) }
+                                        .onEnded { _ in interactor.dragEnded() }
+                                )
                         }
+                        .offset(x: gestureState.cachedOffset)
                     }
                 }
         }
         .clipped()
         .mask { content }
         .onChange(of: leadingContentIsPresented) { newValue in
+            guard !interactor.ignoreContentChanging else { return }
             interactor.showLeadingContent(flag: leadingContentIsPresented)
         }
         .onChange(of: trailingContentIsPresented) { newValue in
+            guard !interactor.ignoreContentChanging else { return }
             interactor.showTrailingContent(flag: trailingContentIsPresented)
         }
     }
