@@ -76,6 +76,7 @@ public struct SwipeActionsModifier: ViewModifier {
                             interactor.resetOffsetWithAnimation()
                         } label: {
                             Color.clear
+                                .contentShape(Rectangle())
                                 .gesture(
                                     DragGesture()
                                         .onChanged { value in interactor.dragOnChanged(translation: value.translation.width) }
