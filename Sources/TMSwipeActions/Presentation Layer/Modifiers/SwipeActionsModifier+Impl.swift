@@ -25,18 +25,17 @@ public struct SwipeActionsModifier: ViewModifier {
 
     init(leadingActions: [SwipeAction],
          trailingActions: [SwipeAction],
-         actionWidth: CGFloat,
          viewConfig: SwipeActionsViewConfig,
          leadingContentIsPresented: Binding<Bool>,
          trailingContentIsPresented: Binding<Bool>) {
         let viewModel = SwipeActionsViewModel(trailingActions: trailingActions,
                                               leadingActions: leadingActions)
 
-        let presenter = SwipeActionsPresenter(actionWidth: actionWidth,
+        let presenter = SwipeActionsPresenter(actionWidth: viewConfig.actionWidth,
                                               leadingSwipeIsUnlocked: !leadingActions.isEmpty,
                                               trailingSwipeIsUnlocked: !trailingActions.isEmpty,
-                                              trailingViewWidth: CGFloat(trailingActions.count) * actionWidth,
-                                              leadingViewWidth: CGFloat(leadingActions.count) * actionWidth)
+                                              trailingViewWidth: CGFloat(trailingActions.count) * viewConfig.actionWidth,
+                                              leadingViewWidth: CGFloat(leadingActions.count) * viewConfig.actionWidth)
         let gestureState = SwipeGestureState()
 
         self._leadingContentIsPresented = leadingContentIsPresented
@@ -59,7 +58,7 @@ public struct SwipeActionsModifier: ViewModifier {
                 .background {
                     GeometryReader { proxy in
                         // Fetching Container View Width
-                        Color.clear.onAppear { contentWidth = proxy.size.width } }
+                        Color.clear.onAppear { self.contentWidth = proxy.size.width } }
                 }
                 .offset(x: interactor.gestureState.offset)
                 .highPriorityGesture(
