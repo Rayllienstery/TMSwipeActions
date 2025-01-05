@@ -33,7 +33,9 @@ class SwipeActionsPresenter: ObservableObject {
         self.leadingViewWidth = leadingViewWidth
     }
 
-    func callVibroIfNeeded(offset: CGFloat, swipeDirection: SwipeEdge) {
+    func callVibroIfNeeded(offset: CGFloat, swipeDirection: SwipeEdge, fullSwipeIsEnabled: Bool) {
+        guard fullSwipeIsEnabled else { return }
+
         let trailingOffset = -offset > trailingViewWidth + actionWidth
         let leadingOffset = offset > leadingViewWidth + actionWidth
         let oversizeStatus = swipeDirection == .trailing ? !trailingIsOversized(offset) : !leadingIsOversized(offset)

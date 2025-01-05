@@ -139,13 +139,16 @@ extension SwipeActionsInteractor {
                 guard let self else { return }
                 let swipeDirection = gestureState.swipeDirection
                 let contentSize = swipeDirection == .leading ? presenter.leadingViewWidth : presenter.trailingViewWidth
+                let fullSwipeIsEnabled = swipeDirection == .leading ? presenter.leadingSwipeIsUnlocked : presenter.trailingSwipeIsUnlocked
+                print(swipeDirection, presenter.leadingSwipeIsUnlocked, presenter.trailingSwipeIsUnlocked)
 
                 gestureState.setNewOffset(newValue,
                                           contentSize: contentSize,
                                           safeWidth: presenter.actionWidth,
                                           fullSwipeIsEnabled:  fullGestureIsEnabled)
                 presenter.callVibroIfNeeded(offset: newValue,
-                                            swipeDirection: swipeDirection)
+                                            swipeDirection: swipeDirection,
+                                            fullSwipeIsEnabled: fullSwipeIsEnabled)
             })
             .store(in: &subscriptions)
     }
