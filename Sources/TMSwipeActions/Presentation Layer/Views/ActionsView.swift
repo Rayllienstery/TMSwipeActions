@@ -19,7 +19,7 @@ struct ActionsView: View {
 
     @State var swipeEdge: SwipeEdge
 
-    @State var width: CGFloat = 0 { didSet { print("width: \(width) \(overdragged)") } }
+    @State var width: CGFloat = 0
     @State var fullWidth: CGFloat = 0
 
     var font: Font

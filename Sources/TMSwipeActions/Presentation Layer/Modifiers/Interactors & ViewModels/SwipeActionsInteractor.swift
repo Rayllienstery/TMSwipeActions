@@ -41,7 +41,6 @@ class SwipeActionsInteractor: ObservableObject {
     }
 
     func updateContent(visibility: SwipeContentVisibility) {
-        print(#function, visibility)
         ignoreContentChanging = true
         self.isLeadingContentVisible.wrappedValue = visibility == .leading
         self.isTrailingContentVisible.wrappedValue = visibility == .trailing
