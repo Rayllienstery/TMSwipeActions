@@ -62,7 +62,7 @@ public struct SwipeActionsModifier: ViewModifier {
                         Color.clear.onAppear { contentWidth = proxy.size.width } }
                 }
                 .offset(x: interactor.gestureState.offset)
-                .gesture(
+                .highPriorityGesture(
                     DragGesture()
                         .onChanged { value in interactor.dragOnChanged(translation: value.translation.width) }
                         .onEnded { _ in interactor.dragEnded() }
